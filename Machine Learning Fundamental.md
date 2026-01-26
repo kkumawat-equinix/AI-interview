@@ -1000,663 +1000,7 @@ pipeline.fit(X_train, y_train)
 
 ---
 
-### 54. How do you encode categorical variables (LabelEncoder, OneHotEncoder, TargetEncoder)?
 
-```python
-**Answer:** Clustering is unsupervised learning that groups similar data points together without labels.
-
-**Types:**
-- **Partitioning:** K-means, K-medoids
-- **Hierarchical:** Agglomerative, divisive
-- **Density-based:** DBSCAN, OPTICS
-- **Model-based:** Gaussian Mixture Models
-
-**Use Cases:**
-- Customer segmentation
-- Document grouping
-- Image segmentation
-- Anomaly detection
-- Gene sequence analysis
-
-**Evaluation:** Silhouette score, Davies-Bouldin index, Calinski-Harabasz index
-
----
-
-### 48. What is K-means clustering?
-**Answer:** K-means partitions data into K clusters by minimizing within-cluster variance.
-
-**Algorithm:**
-1. Randomly initialize K centroids
-2. Assign each point to nearest centroid
-3. Recalculate centroids (mean of assigned points)
-4. Repeat 2-3 until convergence
-
-**Objective:** Minimize `Σ ||xᵢ - cₖ||²` (within-cluster sum of squares)
-
-**Hyperparameter:** K (number of clusters) - use elbow method or silhouette score
-
-**Pros:** Simple, fast, scalable  
-**Cons:** Needs K specified, sensitive to initialization, assumes spherical clusters, sensitive to outliers
-
-**Variants:** K-means++, Mini-batch K-means
-
----
-
-### 49. What is the elbow method?
-**Answer:** Elbow method determines optimal K for K-means by plotting inertia (within-cluster sum of squares) vs K.
-
-**Process:**
-1. Run K-means for different K values (e.g., 1-10)
-2. Calculate inertia for each K
-3. Plot K vs Inertia
-4. Look for "elbow" point where decrease slows
-
-**Inertia:** `WCSS = Σ Σ ||x - cₖ||²`
-
-**Elbow Point:** Point where adding more clusters doesn't significantly reduce inertia
-
-**Limitation:** Elbow not always clear; combine with silhouette score
-
----
-
-### 50. What is a silhouette score?
-**Answer:** Silhouette score measures how well each point fits its cluster compared to other clusters.
-
-**Formula:** `s(i) = (b(i) - a(i)) / max(a(i), b(i))`
-
-Where:
-- **a(i):** Average distance to points in same cluster
-- **b(i):** Average distance to points in nearest other cluster
-
-**Range:** -1 to +1
-- **+1:** Perfect clustering
-- **0:** On cluster boundary
-- **-1:** Wrong cluster
-
-**Average silhouette score** across all points measures overall clustering quality
-
-**Use:** Compare different K values, better than elbow method
-
----
-
-## 💻 Part 2: Practical ML Coding Questions (Questions 1-50) voting
-
-**Key Idea:** Convert weak learners to strong learner
-
-**Types:**
-- AdaBoost: Adaptive Boosting
-- Gradient Boosting
-- XGBoost
-- LightGBM
-- CatBoost
-
-**vs Bagging:** Boosting is sequential, reduces bias; Bagging is parallel, reduces variance
-
----
-
-### 42. What is gradient boosting?
-**Answer:** Gradient Boosting builds trees sequentially, each correcting errors of previous trees using gradient descent.
-
-**Algorithm:**
-1. Start with initial prediction (mean)
-2. Calculate residuals (errors)
-3. Train tree to predict residuals
-4. Add tree to ensemble with learning rate
-5. Update predictions
-6. Repeat
-
-**Key Concept:** Each tree learns the gradient (residual) of loss function
-
-**Hyperparameters:**
-- n_estimators: Number of trees
-- learning_rate: Shrinkage factor
-- max_depth: Tree complexity
-- subsample: Fraction of samples per tree
-
-**Strengths:** High accuracy, handles mixed data types, feature importance
-
----
-
-### 43. What is XGBoost?
-**Answer:** XGBoost (Extreme Gradient Boosting) is an optimized implementation of gradient boosting.
-
-**Key Features:**
-- **Regularization:** L1 and L2 to prevent overfitting
-- **Parallel processing:** Fast training
-- **Handling missing values:** Built-in handling
-- **Tree pruning:** Max depth, then prune backward
-- **Cross-validation:** Built-in CV
-- **Early stopping:** Automatic
-- **Custom loss functions:** Flexible
-
-**Why Popular:**
-- State-of-the-art performance
-- Wins Kaggle competitions
-- Faster than traditional GBM
-- Handles large datasets
-
-**Hyperparameters:** learning_rate, max_depth, n_estimators, subsample, colsample_bytree
-
----
-
-### 44. What is Naïve Bayes classifier?
-**Answer:** Naïve Bayes is a probabilistic classifier based on Bayes' theorem with the "naive" assumption of feature independence.
-
-**Bayes Theorem:** `P(A|B) = P(B|A) * P(A) / P(B)`
-
-**For Classification:**  
-`P(Class|Features) = P(Features|Class) * P(Class) / P(Features)`
-
-**"Naive" Assumption:** Features are conditionally independent given the class
-
-**Types:**
-- **Gaussian NB:** Continuous features (normal distribution)
-- **Multinomial NB:** Discrete counts (text classification)
-- **Bernoulli NB:** Binary features
-
-**Pros:** Fast, works with small data, good for text classification  
-**Cons:** Independence assumption rarely true
-
----
-
-### 45. What is SVM (Support Vector Machine)?
-**Answer:** SVM finds the optimal hyperplane that maximizes the margin between classes.
-
-**Key Concepts:**
-- **Hyperplane:** Decision boundary separating classes
-- **Support Vectors:** Data points closest to hyperplane
-- **Margin:** Distance between hyperplane and nearest points
-- **Objective:** Maximize margin
-
-**For non-linearly separable data:**
-- Use kernel trick
-- Map to higher dimensions
-
-**Pros:**
-- Effective in high dimensions
-- Memory efficient (only uses support vectors)
-- Versatile (different kernels)
-
-**Cons:**
-- Slow on large datasets
-- Sensitive to feature scaling
-- Hard to interpret
-
----
-
-**Hyperparameters:** n_estimators, max_depth, max_features, min_samples_split
-
----
-
-### 40. What is bagging?
-**Answer:** Bagging (Bootstrap Aggregating) trains multiple models on different random subsets of data and averages predictions.
-
-**Process:**
-1. Create k bootstrap samples (sampling with replacement)
-2. Train model on each sample
-3. Aggregate predictions
-   - Classification: Voting
-   - Regression: Averaging
-
-**Benefits:**
-- Reduces variance
-- Prevents overfitting
-- Works well with unstable models (decision trees)
-- Parallel training
-
-**Example:** Random Forest is bagging with decision trees
-
----
-**Distance Metrics:**
-- Euclidean (most common)
-- Manhattan
-- Minkowski
-- Cosine
-
-**Pros:** Simple, no training phase, handles non-linear boundaries  
-**Cons:** Slow prediction, sensitive to scaling, curse of dimensionality
-
-**k Selection:** Use cross-validation; odd k for binary classification
-
----
-
-### 32. What is linear regression?
-**Answer:** Linear regression models the relationship between dependent variable Y and independent variables X using a linear equation.
-
-**Simple:** `Y = β₀ + β₁X + ε`  
-**Multiple:** `Y = β₀ + β₁X₁ + β₂X₂ + ... + βₙXₙ + ε`
-
-**Objective:** Minimize sum of squared residuals (OLS - Ordinary Least Squares)
-
-**Output:** Continuous numerical values
-
-**Evaluation:** R², MSE, RMSE, MAE
-
----
-
-### 33. What assumptions does linear regression make?
-**Answer:**
-
-1. **Linearity:** Relationship between X and Y is linear
-2. **Independence:** Observations are independent
-3. **Homoscedasticity:** Constant variance of residuals
-4. **Normality:** Residuals are normally distributed
-5. **No multicollinearity:** Independent variables are not highly correlated
-
-**Checking Assumptions:**
-- Residual plots
-- Q-Q plots for normality
-- VIF for multicollinearity
-- Durbin-Watson test for autocorrelation
-
-**Violations:** Use transformations, robust regression, or different models
-
----
-
-### 34. What is logistic regression?
-**Answer:** Logistic regression is used for binary classification, predicting probability of an event using sigmoid function.
-
-**Formula:** `P(Y=1|X) = 1 / (1 + e^-(β₀ + β₁X))`
-
-**Output:** Probability [0, 1]  
-**Decision:** If P > 0.5 → Class 1, else Class 0
-
-**Loss Function:** Binary cross-entropy (log loss)
-
-**Advantages:**
-- Probabilistic output
-- Interpretable coefficients
-- Works well for linearly separable data
-- Regularization available (L1/L2)
-
-**Multi-class:** Softmax regression (multinomial logistic regression)
-
----
-
-### 35. What is a decision tree?
-**Answer:** Decision tree is a tree-structured classifier that makes decisions by splitting data based on feature values.
-
-**Structure:**
-- **Root node:** Entire dataset
-- **Internal nodes:** Feature tests
-- **Branches:** Outcomes of tests
-- **Leaf nodes:** Class labels or values
-
-**Splitting Criteria:**
-- Classification: Gini impurity, Information gain (entropy)
-- Regression: Variance reduction
-
-**Pros:**
-- Interpretable
-- Handles non-linear relationships
-- No feature scaling needed
-- Handles missing values
-
-**Cons:**
-- Prone to overfitting
-- Unstable (small data changes → different tree)
-- Biased toward features with many categories
-
-**Solutions:** Pruning, Random Forest, Gradient Boosting
-
----orrelation
-
-**Important:** Correlation ≠ Causation
-
-**Types:**
-- Pearson: Linear relationships
-- Spearman: Monotonic relationships (non-linear)
-- Kendall: Ordinal associations
-
----
-
-### 27. What is covariance?
-**Answer:** Covariance measures how two variables change together.
-
-**Formula:** `Cov(X,Y) = Σ[(xi - x̄)(yi - ȳ)] / (n-1)`
-
-**Interpretation:**
-- **Positive:** Variables increase together
-- **Negative:** One increases, other decreases
-- **Zero:** No linear relationship
-
-**Issue:** Scale-dependent (unbounded)
-
-**Correlation = Covariance / (σx * σy)** → Normalized version
-
----
-
-### 28. What is multicollinearity?
-**Answer:** Multicollinearity occurs when independent variables in a regression model are highly correlated.
-
-**Problems:**
-- Unstable coefficient estimates
-- Large standard errors
-- Difficulty interpreting individual feature effects
-- Coefficient signs may be wrong
-
-**Detection:**
-- **VIF (Variance Inflation Factor):** VIF > 10 indicates multicollinearity
-- **Correlation matrix:** High pairwise correlations
-- **Condition number:** Large values indicate problems
-
-**Solutions:**
-- Remove correlated features
-- PCA for dimensionality reduction
-- Ridge regression (L2 regularization)
-- Domain knowledge to select features
-
----
-
-### 29. What is dimensionality reduction?
-**Answer:** Reducing the number of features while preserving important information.
-
-**Why:**
-- Curse of dimensionality
-- Reduce computation
-- Visualization (2D/3D)
-- Remove noise
-- Address multicollinearity
-- Prevent overfitting
-
-**Methods:**
-- **Feature Selection:** Select subset of original features
-  - Filter: Statistical tests
-  - Wrapper: Recursive feature elimination
-  - Embedded: Lasso, tree importance
-  
-- **Feature Extraction:** Create new features
-  - PCA: Linear transformation
-  - t-SNE: Non-linear, for visualization
-  - Autoencoders: Neural network approach
-
----
-
-### 30. What is PCA? (Principal Component Analysis)
-**Answer:** PCA is an unsupervised linear dimensionality reduction technique that transforms data into orthogonal principal components.
-
-**How it works:**
-1. Standardize data
-2. Compute covariance matrix
-3. Calculate eigenvectors and eigenvalues
-4. Sort by eigenvalue (variance explained)
-5. Select top K components
-6. Transform data
-
-**Principal Components:**
-- Linear combinations of original features
-- Ordered by variance explained
-- Orthogonal (uncorrelated)
-
-**Use Cases:**
-- Dimensionality reduction
-- Noise reduction
-- Visualization
-- Feature extraction
-
-**Limitation:** Assumes linear relationships, less interpretable
-
----
-**Components:**
-- **True Positive (TP):** Correctly predicted positive
-- **True Negative (TN):** Correctly predicted negative
-- **False Positive (FP):** Type I error (predicted positive, actually negative)
-- **False Negative (FN):** Type II error (predicted negative, actually positive)
-
-**Use:** Calculate precision, recall, accuracy, F1-score
-
----
-
-### 22. What are precision, recall, and F1-score?
-**Answer:**
-
-**Precision = TP / (TP + FP)**
-- "Of all predicted positives, how many are correct?"
-- Use when: False positives are costly (spam detection)
-
-**Recall (Sensitivity) = TP / (TP + FN)**
-- "Of all actual positives, how many did we find?"
-- Use when: False negatives are costly (disease detection)
-
-**F1-Score = 2 * (Precision * Recall) / (Precision + Recall)**
-- Harmonic mean of precision and recall
-- Use when: Need balance between precision and recall
-- Use when: Classes are imbalanced
-
-**Trade-off:** Increasing precision often decreases recall and vice versa
-
----
-
-### 23. What is accuracy? When is accuracy not useful?
-**Answer:**
-
-**Accuracy = (TP + TN) / (TP + TN + FP + FN)**
-- Percentage of correct predictions
-
-**Not Useful When:**
-1. **Imbalanced datasets:** 95% negative class → always predicting negative gives 95% accuracy but is useless
-2. **Unequal costs:** Missing cancer (FN) is worse than false alarm (FP)
-3. **Multi-class problems:** Need per-class metrics
-
-**Better Alternatives:**
-- Precision, Recall, F1-score
-- ROC-AUC
-- Balanced accuracy
-- Cohen's Kappa
-
----
-
-### 24. What is ROC curve?
-**Answer:** ROC (Receiver Operating Characteristic) curve plots True Positive Rate vs False Positive Rate at various classification thresholds.
-
-**Axes:**
-- X-axis: False Positive Rate (FPR) = FP / (FP + TN)
-- Y-axis: True Positive Rate (TPR) = TP / (TP + FN) = Recall
-
-**Interpretation:**
-- Perfect classifier: Curve goes through top-left corner
-- Random classifier: Diagonal line
-- Better model: More area under curve
-
-**Use:** Compare models, select optimal threshold
-
----
-
-### 25. What is AUC (Area Under Curve)?
-**Answer:** AUC is the area under the ROC curve, measuring model's ability to distinguish between classes.
-
-**Range:** 0 to 1
-- **1.0:** Perfect classifier
-- **0.9-1.0:** Excellent
-- **0.8-0.9:** Good
-- **0.7-0.8:** Fair
-- **0.5:** Random (no discriminative power)
-- **<0.5:** Worse than random
-
-**Advantages:**
-- Threshold-independent
-- Handles class imbalance well
-- Single number for model comparison
-
----
-  - Binary Cross-Entropy: Binary classification
-  - Categorical Cross-Entropy: Multi-class classification
-  - Hinge Loss: SVM
-
-**Goal:** Minimize loss during training through optimization
-
----
-
-### 17. What is gradient descent?
-**Answer:** Gradient descent is an iterative optimization algorithm to minimize the loss function by updating parameters in the direction of steepest descent.
-
-**Algorithm:**
-1. Initialize parameters randomly
-2. Calculate gradient (derivative) of loss w.r.t. parameters
-3. Update: `θ = θ - α * ∇J(θ)`
-4. Repeat until convergence
-
-**α (learning rate):** Controls step size
-- Too small: Slow convergence
-- Too large: May overshoot minimum
-
-**Types:**
-- Batch GD: Uses all data (slow)
-- Stochastic GD: Uses one sample (noisy)
-- Mini-batch GD: Uses small batches (best balance)
-
----
-
-### 18. What is stochastic gradient descent (SGD)?
-**Answer:** SGD updates parameters using one random training example at a time, rather than the entire dataset.
-
-**Advantages:**
-- Faster iterations
-- Can escape local minima due to noise
-- Works with large datasets
-- Online learning capability
-
-**Disadvantages:**
-- Noisy updates
-- Slower convergence
-- Requires learning rate tuning
-
-**Mini-batch SGD:** Best practice - uses small batches (32, 64, 128) for balance between speed and stability
-
----
-
-### 19. What is regularization?
-**Answer:** Regularization prevents overfitting by adding a penalty term to the loss function, discouraging complex models.
-
-**Purpose:**
-- Reduce model complexity
-- Prevent overfitting
-- Improve generalization
-- Handle multicollinearity
-
-**Types:**
-- **L1 (Lasso):** Adds |coefficients| sum
-- **L2 (Ridge):** Adds coefficients² sum
-- **Elastic Net:** Combines L1 + L2
-- **Dropout:** Randomly drops neurons (neural networks)
-
-**Modified Loss:** `J(θ) = Loss + λ * Penalty`
-
----
-
-### 20. Difference between L1 and L2 regularization?
-**Answer:**
-
-| Aspect | L1 (Lasso) | L2 (Ridge) |
-|--------|-----------|-----------|
-| **Penalty** | Sum of absolute values | Sum of squares |
-| **Formula** | λΣ\|w\| | λΣw² |
-| **Feature Selection** | Yes (drives coefficients to 0) | No (shrinks but doesn't eliminate) |
-| **Use Case** | Sparse models, feature selection | All features matter |
-| **Robustness** | Handles multicollinearity | Distributes weight across correlated features |
-| **Solution** | Not differentiable at 0 | Differentiable everywhere |
-
-**Elastic Net:** Combines both: `λ₁Σ|w| + λ₂Σw²`
-
----
-- Decide when to stop training (early stopping)
-- Compare different models
-
-**Split:** Training (60-70%) | Validation (10-20%) | Test (20-30%)
-
----
-
-### 13. What is feature engineering?
-**Answer:** Feature engineering is the process of creating, transforming, and selecting features to improve model performance.
-
-**Techniques:**
-- **Creation:** Polynomial features, interaction terms, aggregations
-- **Transformation:** Log, sqrt, binning, encoding
-- **Extraction:** PCA, text embeddings, image features
-- **Selection:** Filter, wrapper, embedded methods
-- **Domain-specific:** Date → day/month/year, text → TF-IDF
-
-**Impact:** Often more important than model choice for performance
-
----
-
-### 14. What is feature scaling?
-**Answer:** Feature scaling normalizes feature ranges to prevent features with larger scales from dominating.
-
-**Two Main Types:**
-
-**Standardization (Z-score normalization):**
-- Formula: `z = (x - μ) / σ`
-- Result: Mean=0, Std=1
-- Use when: Features follow normal distribution
-- Algorithms: Linear models, SVM, Neural Networks
-
-**Normalization (Min-Max scaling):**
-- Formula: `x_scaled = (x - min) / (max - min)`
-- Result: Range [0, 1]
-- Use when: Need bounded range
-- Sensitive to outliers
-
-**When needed:** Distance-based algorithms (KNN, SVM), gradient descent optimization
-
----
-
-### 15. What is the difference between parametric and non-parametric models?
-**Answer:**
-
-**Parametric Models:**
-- Fixed number of parameters
-- Makes assumptions about data distribution
-- Faster, simpler, interpretable
-- Examples: Linear Regression, Logistic Regression, Naive Bayes
-- Risk: High bias if assumptions wrong
-
-**Non-parametric Models:**
-- Number of parameters grows with data
-- Fewer assumptions about data
-- More flexible, can model complex patterns
-- Examples: KNN, Decision Trees, Random Forest, SVM with RBF kernel
-- Risk: Overfitting, computational cost
-
----
-16. What is a loss function?
-17. What is gradient descent?
-18. What is stochastic gradient descent (SGD)?
-19. What is regularization?
-20. Difference between L1 and L2 regularization?
-21. What is a confusion matrix?
-22. What are precision, recall, and F1-score?
-23. What is accuracy? When is accuracy not useful?
-24. What is ROC curve?
-25. What is AUC (Area Under Curve)?
-26. What is correlation?
-27. What is covariance?
-28. What is multicollinearity?
-29. What is dimensionality reduction?
-30. What is PCA? (Principal Component Analysis)
-31. What is kNN algorithm?
-32. What is linear regression?
-33. What assumptions does linear regression make?
-34. What is logistic regression?
-35. What is a decision tree?
-36. What is entropy and information gain?
-37. What is Gini impurity?
-38. What is pruning in decision trees?
-39. What is a random forest?
-40. What is bagging?
-41. What is boosting?
-42. What is gradient boosting?
-43. What is XGBoost?
-44. What is Naïve Bayes classifier?
-45. What is SVM (Support Vector Machine)?
-46. What is the kernel trick?
-47. What is clustering?
-48. What is K-means clustering?
-49. What is the elbow method?
-50. What is a silhouette score?
-1. How do you handle missing values in a dataset? Show different approaches in code.
-2. How do you detect and remove outliers?
-3. How do you perform feature scaling? Provide code for StandardScaler and MinMaxScaler.
 ### 54. How do you encode categorical variables (LabelEncoder, OneHotEncoder, TargetEncoder)?
 
 ```python
@@ -2119,95 +1463,110 @@ for iteration in range(1000):
 ```
 
 ---
-63. How do you evaluate a model using confusion matrix?
-64. How do you choose evaluation metrics for unbalanced datasets?
-65. How do you save and load a trained model using joblib/pickle?
-66. How do you monitor model drift in production?
-67. How do you select top features using SelectKBest?
-68. How do you perform PCA with sklearn?
-69. How do you detect multicollinearity? Show VIF calculation.
-70. How do you build a logistic regression model end-to-end in Python?
-71. How do you build a random forest model?
-72. How do you tune a random forest for optimal performance?
-73. How do you implement XGBoost for classification?
-74. How do you prevent overfitting in XGBoost?
-75. How do you perform feature selection using SHAP values?
-76. How do you debug a model that is overfitting badly?
-77. How do you handle categorical features with more than 100 levels?
-78. How do you preprocess text data for ML?
-79. How do you convert text to tf-idf vectors?
-80. How do you deploy a scikit-learn model using FastAPI?
-81. How do you create an ML pipeline using sklearn Pipeline?
-82. How do you implement k-means clustering step by step?
-83. How do you choose the optimal number of clusters?
-84. How do you evaluate clustering performance without labels?
-85. How do you handle time-series data?
-86. How do you split time-series data without leakage?
-87. How do you implement ARIMA or SARIMA models?
-88. How do you detect seasonality and trend in time-series?
-89. How do you generate lag features in a time-series dataset?
-90. How do you implement rolling windows in pandas?
-91. How do you build a neural network in TensorFlow/Keras?
-92. How do you build a neural network in PyTorch?
-93. How do you implement dropout, batch normalization?
-94. How do you use callbacks such as EarlyStopping and ModelCheckpoint?
-95. How do you visualize learning curves?
-96. How do you handle exploding/vanishing gradients?
-97. How do you load, clean, and preprocess image datasets?
-98. How do you fine-tune a pretrained model (Transfer Learning)?
-99. How do you serve a DL model with a REST API?
-100. How do you track experiments with MLflow / Weights & Biases?
+### 63. How do you evaluate a model using confusion matrix?
+### 64. How do you choose evaluation metrics for unbalanced datasets?
+### 65. How do you save and load a trained model using joblib/pickle?
+### 66. How do you monitor model drift in production?
+### 67. How do you select top features using SelectKBest?
+### 68. How do you perform PCA with sklearn?
+### 69. How do you detect multicollinearity? Show VIF calculation.
+### 70. How do you build a logistic regression model end-to-end in Python?
+### 71. How do you build a random forest model?
+### 72. How do you tune a random forest for optimal performance?
+### 73. How do you implement XGBoost for classification?
+### 74. How do you prevent overfitting in XGBoost?
+### 75. How do you perform feature selection using SHAP values?
+### 76. How do you debug a model that is overfitting badly?
+### 77. How do you handle categorical features with more than 100 levels?
+### 78. How do you preprocess text data for ML?
+### 79. How do you convert text to tf-idf vectors?
+### 80. How do you deploy a scikit-learn model using FastAPI?
+### 81. How do you create an ML pipeline using sklearn Pipeline?
+### 82. How do you implement k-means clustering step by step?
+### 83. How do you choose the optimal number of clusters?
+### 84. How do you evaluate clustering performance without labels?
+### 85. How do you handle time-series data?
+### 86. How do you split time-series data without leakage?
+### 87. How do you implement ARIMA or SARIMA models?
+### 88. How do you detect seasonality and trend in time-series?
+### 89. How do you generate lag features in a time-series dataset?
+### 90. How do you implement rolling windows in pandas?
+### 91. How do you build a neural network in TensorFlow/Keras?
+### 92. How do you build a neural network in PyTorch?
+### 93. How do you implement dropout, batch normalization?
+### 94. How do you use callbacks such as EarlyStopping and ModelCheckpoint?
+### 95. How do you visualize learning curves?
+### 96. How do you handle exploding/vanishing gradients?
+### 97. How do you load, clean, and preprocess image datasets?
+### 98. How do you fine-tune a pretrained model (Transfer Learning)?
+### 99. How do you serve a DL model with a REST API?
+### 100. How do you track experiments with MLflow / Weights & Biases?
 
-🚀 A. Advanced Machine Learning (1–15)
-1. Explain the mathematical intuition behind self-attention.
-2. What problem do Transformers solve that RNNs and LSTMs could not?
-3. How does multi-head attention improve model performance?
-4. What are positional encodings and why are they required?
-5. Explain LayerNorm vs BatchNorm.
-6. What is the difference between fine-tuning and feature extraction?
-7. How does model quantization reduce inference cost?
-8. What is knowledge distillation? How is the student model trained?
-9. How does curriculum learning improve optimization?
-10. Explain gradient checkpointing and why it's used.
-11. What is catastrophic forgetting? How do modern models mitigate it?
-12. How does contrastive learning work? (e.g., SimCLR, CLIP)
-13. Why is cross-entropy widely used for classification?
-14. Explain the differences between Adam, AdamW, and RMSProp.
-15. What is a mixture-of-experts model, and why is MoE efficient?
-🤖 B. Large Language Models (LLMs) & GenAI (16–35)
-16. How does a decoder-only Transformer (GPT architecture) work?
-17. What is the architecture difference between GPT, BERT, and T5?
-18. How does tokenization influence LLM performance?
-19. Explain Rotary Positional Embeddings (RoPE).
-20. What is the KV cache? Why does it speed up inference?
-21. What is LoRA and why is it better than full fine-tuning?
-22. Explain QLoRA and 4-bit quantization.
-23. What are PEFT methods? List 4 common ones.
-24. How do you prevent hallucinations in LLMs?
-25. What is supervised fine-tuning (SFT)? How is it different from RLHF?
-26. What is RLHF? Explain reward modeling, training, preference data.
-27. What are guardrails in LLM-based systems?
-28. How do you evaluate LLMs? (MT-Bench, HELM, MMLU, BLEU, Rouge)
-29. What is instruction tuning?
-30. Explain the concept of “chain-of-thought prompting.”
-31. What is retrieval-augmented generation (RAG)?
-32. What vector databases are used in RAG?
-33. Explain chunking strategies for RAG pipelines.
-34. What are embedding models? How do they differ from LLMs?
-35. Explain how LlamaIndex or LangChain orchestrate LLM pipelines.
-🧠 C. Agentic AI & Autonomous AI Systems (36–50)
-36. What is an AI agent? How does it differ from a chatbot?
-37. Explain deliberate reasoning vs reactive reasoning in agents.
-38. What is ReAct? How does it combine reasoning + acting?
-39. What is a memory module in agent architecture?
-40. Explain tool-use in agentic systems with examples.
-41. How do multi-agent systems collaborate?
-42. What is the difference between single-agent and multi-agent planning?
-43. What are agent workflows in LangChain?
-44. How do agents decide when to call external APIs/tools?
-45. Explain planning algorithms used in agents (MCTS, A).*
-46. What is retrieval-augmented agents?
-47. How do agents maintain long-term memory? (Vector DB / episodic)
-48. How do agents handle uncertainty and tool failures?
-49. What is task decomposition in agentic systems?
-50. What safety risks exist in autonomous AI agents?
+
+## 🚀 Part 3: Advanced ML Topics (Questions 101-150)
+
+### A. Advanced Machine Learning (101–115)
+### 101. Explain the mathematical intuition behind self-attention.
+### 102. What problem do Transformers solve that RNNs and LSTMs could not?
+### 103. How does multi-head attention improve model performance?
+### 104. What are positional encodings and why are they required?
+### 105. Explain LayerNorm vs BatchNorm.
+### 106. What is the difference between fine-tuning and feature extraction?
+### 107. How does model quantization reduce inference cost?
+### 108. What is knowledge distillation? How is the student model trained?
+### 109. How does curriculum learning improve optimization?
+### 110. Explain gradient checkpointing and why it's used.
+### 111. What is catastrophic forgetting? How do modern models mitigate it?
+### 112. How does contrastive learning work? (e.g., SimCLR, CLIP)
+### 113. Why is cross-entropy widely used for classification?
+### 114. Explain the differences between Adam, AdamW, and RMSProp.
+### 115. What is a mixture-of-experts model, and why is MoE efficient?
+
+---
+
+
+---
+
+### B. Large Language Models (LLMs) & GenAI (116–135)
+### 116. How does a decoder-only Transformer (GPT architecture) work?
+### 117. What is the architecture difference between GPT, BERT, and T5?
+### 118. How does tokenization influence LLM performance?
+### 119. Explain Rotary Positional Embeddings (RoPE).
+### 120. What is the KV cache? Why does it speed up inference?
+### 121. What is LoRA and why is it better than full fine-tuning?
+### 122. Explain QLoRA and 4-bit quantization.
+### 123. What are PEFT methods? List 4 common ones.
+### 124. How do you prevent hallucinations in LLMs?
+### 125. What is supervised fine-tuning (SFT)? How is it different from RLHF?
+### 126. What is RLHF? Explain reward modeling, training, preference data.
+### 127. What are guardrails in LLM-based systems?
+### 128. How do you evaluate LLMs? (MT-Bench, HELM, MMLU, BLEU, Rouge)
+### 129. What is instruction tuning?
+### 130. Explain the concept of “chain-of-thought prompting.”
+### 131. What is retrieval-augmented generation (RAG)?
+### 132. What vector databases are used in RAG?
+### 133. Explain chunking strategies for RAG pipelines.
+### 134. What are embedding models? How do they differ from LLMs?
+### 135. Explain how LlamaIndex or LangChain orchestrate LLM pipelines.
+
+---
+
+
+---
+
+### C. Agentic AI & Autonomous AI Systems (136–150)
+### 136. What is an AI agent? How does it differ from a chatbot?
+### 137. Explain deliberate reasoning vs reactive reasoning in agents.
+### 138. What is ReAct? How does it combine reasoning + acting?
+### 139. What is a memory module in agent architecture?
+### 140. Explain tool-use in agentic systems with examples.
+### 141. How do multi-agent systems collaborate?
+### 142. What is the difference between single-agent and multi-agent planning?
+### 143. What are agent workflows in LangChain?
+### 144. How do agents decide when to call external APIs/tools?
+### 145. Explain planning algorithms used in agents (MCTS, A*).
+### 146. What is retrieval-augmented agents?
+### 147. How do agents maintain long-term memory? (Vector DB / episodic)
+### 148. How do agents handle uncertainty and tool failures?
+### 149. What is task decomposition in agentic systems?
+### 150. What safety risks exist in autonomous AI agents?
