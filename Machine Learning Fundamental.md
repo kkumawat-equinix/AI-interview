@@ -1464,43 +1464,476 @@ for iteration in range(1000):
 
 ---
 ### 63. How do you evaluate a model using confusion matrix?
+**Answer:** Build the confusion matrix (TP/FP/FN/TN) and derive metrics like precision, recall, F1.
+
+```python
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+
+y_pred = model.predict(X_test)
+cm = confusion_matrix(y_test, y_pred)
+ConfusionMatrixDisplay(cm).plot()
+print(classification_report(y_test, y_pred))
+```
+
+---
+
 ### 64. How do you choose evaluation metrics for unbalanced datasets?
+**Answer:** Don’t rely on accuracy. Use:
+- **Recall** (missing positives is costly), **Precision** (false alarms are costly), **F1** (balance)
+- **PR-AUC** (usually best for heavy imbalance), **ROC-AUC** (threshold-free)
+- **Balanced accuracy** / **MCC** for a single robust score
+
+---
+
 ### 65. How do you save and load a trained model using joblib/pickle?
+**Answer:** Save the full **pipeline** (preprocessing + model). `joblib` is standard for scikit-learn.
+
+```python
+import joblib
+
+joblib.dump(pipeline, "model.joblib")
+pipeline = joblib.load("model.joblib")
+y_pred = pipeline.predict(X_test)
+```
+
+---
+
 ### 66. How do you monitor model drift in production?
+**Answer:** Track:
+- **Data drift:** input distributions change (PSI/KS tests, feature stats)
+- **Performance drift:** model metrics over time once labels arrive
+- **Concept drift:** $X \to y$ relationship changes (metrics drop even if inputs look similar)
+
+Set alerts, keep dashboards, and retrain on schedule or when drift triggers.
+
+---
+
 ### 67. How do you select top features using SelectKBest?
+**Answer:** Select features using training data only (best inside a pipeline to avoid leakage).
+
+```python
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+
+pipe = Pipeline([
+    ("select", SelectKBest(score_func=f_classif, k=20)),
+    ("model", LogisticRegression(max_iter=2000))
+])
+pipe.fit(X_train, y_train)
+```
+
+---
+
 ### 68. How do you perform PCA with sklearn?
+**Answer:** Standardize → fit PCA on train → transform train/test.
+
+```python
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+pca_pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("pca", PCA(n_components=0.95, random_state=42))
+])
+X_train_pca = pca_pipe.fit_transform(X_train)
+X_test_pca = pca_pipe.transform(X_test)
+```
+
+---
+
 ### 69. How do you detect multicollinearity? Show VIF calculation.
+**Answer:** Use correlation + **VIF**. Rule of thumb: VIF > 5–10 is a red flag.
+
+```python
+import pandas as pd
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+Xv = df[feature_cols].dropna()
+vif = pd.DataFrame({
+    "feature": Xv.columns,
+    "VIF": [variance_inflation_factor(Xv.values, i) for i in range(Xv.shape[1])]
+}).sort_values("VIF", ascending=False)
+print(vif)
+```
+
+---
+
 ### 70. How do you build a logistic regression model end-to-end in Python?
+**Answer:** Split → preprocess → train → evaluate (pipeline keeps it clean).
+
+```python
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("lr", LogisticRegression(max_iter=2000, class_weight="balanced"))
+])
+pipe.fit(X_train, y_train)
+print("F1:", f1_score(y_test, pipe.predict(X_test)))
+```
+
+---
+
 ### 71. How do you build a random forest model?
+**Answer:** Train a `RandomForestClassifier/Regressor` and evaluate on a holdout set.
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score
+
+rf = RandomForestClassifier(
+    n_estimators=300, random_state=42, n_jobs=-1, class_weight="balanced"
+)
+rf.fit(X_train, y_train)
+proba = rf.predict_proba(X_test)[:, 1]
+print("ROC-AUC:", roc_auc_score(y_test, proba))
+```
+
+---
+
 ### 72. How do you tune a random forest for optimal performance?
+**Answer:** Use cross-validation and tune key params: `n_estimators`, `max_depth`, `max_features`, `min_samples_split`, `min_samples_leaf`.
+
+---
+
 ### 73. How do you implement XGBoost for classification?
+**Answer:** Train `XGBClassifier` and use early stopping on a validation set.
+
+```python
+from xgboost import XGBClassifier
+
+xgb = XGBClassifier(
+    n_estimators=2000,
+    learning_rate=0.05,
+    max_depth=6,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    reg_lambda=1.0,
+    random_state=42,
+    eval_metric="logloss",
+)
+
+xgb.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+y_pred = xgb.predict(X_test)
+```
+
+---
+
 ### 74. How do you prevent overfitting in XGBoost?
+**Answer:** Use:
+- **Early stopping**, smaller `learning_rate`
+- Control complexity: `max_depth`, `min_child_weight`
+- Randomness: `subsample`, `colsample_bytree`
+- Regularization: `reg_alpha` (L1), `reg_lambda` (L2)
+
+---
+
 ### 75. How do you perform feature selection using SHAP values?
+**Answer:** Compute mean absolute SHAP importance and keep top-$k$ features.
+
+```python
+import numpy as np
+import shap
+
+explainer = shap.TreeExplainer(xgb)
+shap_vals = explainer.shap_values(X_train)
+importance = np.abs(shap_vals).mean(axis=0)
+top_features = X_train.columns[np.argsort(importance)[::-1][:20]]
+print(list(top_features))
+```
+
+---
+
 ### 76. How do you debug a model that is overfitting badly?
+**Answer:**
+- Check **data leakage** and split issues
+- Compare train vs validation metrics and learning curves
+- Reduce complexity / add regularization / early stop
+- Improve data quality or add more data
+
+---
+
 ### 77. How do you handle categorical features with more than 100 levels?
+**Answer:** Avoid huge one-hot. Use:
+- **Target encoding** (with CV to prevent leakage)
+- **Frequency encoding** / group rare labels as “Other”
+- **Hashing trick** or **CatBoost** for strong categorical handling
+
+---
+
 ### 78. How do you preprocess text data for ML?
+**Answer:** Clean (lowercase, remove URLs/punctuation), tokenize, optionally remove stopwords/lemmatize, then vectorize (TF-IDF) or use embeddings.
+
+---
+
 ### 79. How do you convert text to tf-idf vectors?
+**Answer:** Fit TF-IDF on train text and transform test text.
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+tfidf = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
+X_train_vec = tfidf.fit_transform(train_text)
+X_test_vec = tfidf.transform(test_text)
+```
+
+---
+
 ### 80. How do you deploy a scikit-learn model using FastAPI?
+**Answer:** Save the pipeline, load it once in FastAPI, expose `/predict`.
+
+```python
+# app.py
+import joblib
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+model = joblib.load("model.joblib")
+
+class Item(BaseModel):
+    features: list[float]
+
+@app.post("/predict")
+def predict(item: Item):
+    pred = model.predict([item.features])[0]
+    return {"prediction": int(pred)}
+```
+
+---
+
 ### 81. How do you create an ML pipeline using sklearn Pipeline?
+**Answer:** Use `ColumnTransformer` + `Pipeline` so preprocessing and training are consistent.
+
+```python
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+
+pre = ColumnTransformer([
+    ("num", StandardScaler(), num_cols),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+])
+
+pipe = Pipeline([("preprocess", pre), ("model", LogisticRegression(max_iter=2000))])
+pipe.fit(X_train, y_train)
+```
+
+---
+
 ### 82. How do you implement k-means clustering step by step?
+**Answer:** Scale → fit KMeans → get labels and centroids.
+
+```python
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+X_scaled = StandardScaler().fit_transform(X)
+kmeans = KMeans(n_clusters=5, n_init="auto", random_state=42)
+labels = kmeans.fit_predict(X_scaled)
+centroids = kmeans.cluster_centers_
+```
+
+---
+
 ### 83. How do you choose the optimal number of clusters?
+**Answer:** Use **elbow** (inertia vs k), **silhouette score**, and check cluster stability + interpretability.
+
+---
+
 ### 84. How do you evaluate clustering performance without labels?
+**Answer:** Use internal metrics: **silhouette** (higher better), **Davies–Bouldin** (lower), **Calinski–Harabasz** (higher), plus sanity checks on cluster sizes.
+
+---
+
 ### 85. How do you handle time-series data?
+**Answer:** Keep time order, create lag/rolling/seasonality features, and evaluate using time-based splits (not random shuffles).
+
+---
+
 ### 86. How do you split time-series data without leakage?
+**Answer:** Use chronological split or walk-forward CV (no shuffling).
+
+```python
+from sklearn.model_selection import TimeSeriesSplit
+
+tscv = TimeSeriesSplit(n_splits=5)
+for tr_idx, te_idx in tscv.split(X):
+    X_train, X_test = X.iloc[tr_idx], X.iloc[te_idx]
+```
+
+---
+
 ### 87. How do you implement ARIMA or SARIMA models?
+**Answer:** Use `SARIMAX` in `statsmodels` (SARIMA = ARIMA + seasonality).
+
+```python
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+
+model = SARIMAX(y, order=(1, 1, 1), seasonal_order=(1, 1, 1, 12))
+res = model.fit(disp=False)
+forecast = res.forecast(steps=12)
+```
+
+---
+
 ### 88. How do you detect seasonality and trend in time-series?
+**Answer:** Use decomposition (e.g., STL), check ACF/PACF peaks at seasonal lags, and visualize by day/week/month.
+
+---
+
 ### 89. How do you generate lag features in a time-series dataset?
+**Answer:** Use `shift()` for lags and `rolling()` for window statistics.
+
+```python
+df = df.sort_values("date")
+df["lag_1"] = df["y"].shift(1)
+df["lag_7"] = df["y"].shift(7)
+df["roll_mean_7"] = df["y"].rolling(7).mean()
+```
+
+---
+
 ### 90. How do you implement rolling windows in pandas?
+**Answer:** Use `rolling()` for moving stats and `expanding()` for growing windows.
+
+```python
+df["ma_30"] = df["y"].rolling(window=30, min_periods=1).mean()
+df["std_30"] = df["y"].rolling(window=30, min_periods=1).std()
+```
+
+---
+
 ### 91. How do you build a neural network in TensorFlow/Keras?
+**Answer:** Define the model → compile → fit with validation.
+
+```python
+import tensorflow as tf
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(64, activation="relu"),
+    tf.keras.layers.Dense(1, activation="sigmoid")
+])
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["AUC"])
+model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=20, batch_size=32)
+```
+
+---
+
 ### 92. How do you build a neural network in PyTorch?
+**Answer:** Define `nn.Module`, choose loss/optimizer, and run a training loop.
+
+```python
+import torch
+import torch.nn as nn
+
+net = nn.Sequential(nn.Linear(X_train_t.shape[1], 64), nn.ReLU(), nn.Linear(64, 1))
+loss_fn = nn.BCEWithLogitsLoss()
+opt = torch.optim.Adam(net.parameters(), lr=1e-3)
+
+for _ in range(10):
+    logits = net(X_train_t).squeeze(1)
+    loss = loss_fn(logits, y_train_t.float())
+    opt.zero_grad(); loss.backward(); opt.step()
+```
+
+---
+
 ### 93. How do you implement dropout, batch normalization?
+**Answer:** Dropout reduces overfitting; BatchNorm stabilizes training.
+
+```python
+# Keras example
+import tensorflow as tf
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(128),
+    tf.keras.layers.BatchNormalization(),
+    tf.keras.layers.Activation("relu"),
+    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dense(1, activation="sigmoid"),
+])
+```
+
+---
+
 ### 94. How do you use callbacks such as EarlyStopping and ModelCheckpoint?
+**Answer:** Stop when validation stops improving and save the best checkpoint.
+
+```python
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+
+callbacks = [
+    EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True),
+    ModelCheckpoint("best.keras", monitor="val_loss", save_best_only=True),
+]
+model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=100, callbacks=callbacks)
+```
+
+---
+
 ### 95. How do you visualize learning curves?
+**Answer:** Plot train vs validation performance as data size increases (or loss vs epochs for DL).
+
+---
+
 ### 96. How do you handle exploding/vanishing gradients?
+**Answer:**
+- Exploding: **gradient clipping**, smaller learning rate
+- Vanishing: **ReLU/GeLU**, good init, **BatchNorm**, **residual connections**
+- For sequences: prefer **LSTM/GRU/Transformers** over vanilla RNNs
+
+---
+
 ### 97. How do you load, clean, and preprocess image datasets?
+**Answer:** Use dataset loaders and transforms: resize, normalize, and augment.
+
+```python
+from torchvision import datasets, transforms
+
+t = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+ds = datasets.ImageFolder("data/images", transform=t)
+```
+
+---
+
 ### 98. How do you fine-tune a pretrained model (Transfer Learning)?
+**Answer:** Freeze backbone → train new head → unfreeze some layers and fine-tune with a lower LR.
+
+---
+
 ### 99. How do you serve a DL model with a REST API?
+**Answer:** Load model once on startup, preprocess input, run inference, return JSON (FastAPI is common). Use batching and `no_grad()` in PyTorch.
+
+---
+
 ### 100. How do you track experiments with MLflow / Weights & Biases?
+**Answer:** Log params, metrics, artifacts, and the model so runs are reproducible.
+
+```python
+import mlflow
+
+with mlflow.start_run():
+    mlflow.log_param("model", "random_forest")
+    mlflow.log_metric("f1", f1)
+    mlflow.sklearn.log_model(pipe, "model")
+```
 
 
 ## 🚀 Part 3: Advanced ML Topics (Questions 101-150)
