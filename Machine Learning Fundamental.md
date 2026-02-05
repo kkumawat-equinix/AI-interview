@@ -1939,21 +1939,1091 @@ with mlflow.start_run():
 ## 🚀 Part 3: Advanced ML Topics (Questions 101-150)
 
 ### A. Advanced Machine Learning (101–115)
+
 ### 101. Explain the mathematical intuition behind self-attention.
+
+**Self-attention** allows each token to "look at" all other tokens and decide which ones are most relevant to understanding it.
+
+**Mathematical Flow:**
+1. Input embeddings: $X \in \mathbb{R}^{n \times d}$ (n tokens, d dimensions)
+2. Create **Query (Q)**, **Key (K)**, **Value (V)** matrices via learned projections:
+   - $Q = XW_Q$, $K = XW_K$, $V = XW_V$
+3. Compute **attention scores** (dot product similarity):
+   - $\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$
+4. The softmax creates weights showing how much each token should attend to others
+5. Multiply these weights by V to get context-aware representations
+
+**Intuition:**
+- **Query**: "What am I looking for?"
+- **Key**: "What do I contain?"
+- **Value**: "What information do I provide?"
+- Scaling by $\sqrt{d_k}$ prevents softmax saturation in high dimensions
+
+```python
+import torch
+import torch.nn.functional as F
+
+def self_attention(X, W_q, W_k, W_v):
+    Q = X @ W_q  # [n, d_k]
+    K = X @ W_k  # [n, d_k]
+    V = X @ W_v  # [n, d_v]
+    
+    scores = Q @ K.T / torch.sqrt(torch.tensor(K.shape[-1], dtype=torch.float32))
+    attention_weights = F.softmax(scores, dim=-1)  # [n, n]
+    output = attention_weights @ V  # [n, d_v]
+    return output, attention_weights
+```
+
+---
+
 ### 102. What problem do Transformers solve that RNNs and LSTMs could not?
+
+**Key Problems Solved:**
+
+| **Problem** | **RNN/LSTM Issue** | **Transformer Solution** |
+|-------------|-------------------|-------------------------|
+| **Sequential Processing** | Must process tokens one-by-one (sequential dependency) | Parallel processing of all tokens |
+| **Long-range Dependencies** | Information degrades over long sequences (vanishing gradients) | Direct attention to any token regardless of distance |
+| **Training Speed** | Slow due to sequential nature | Massively parallelizable → 10-100x faster |
+| **Computational Complexity** | $O(n)$ sequential steps | $O(1)$ layers (but $O(n^2)$ attention) |
+
+**Concrete Example:**
+- Sentence: "The animal didn't cross the street because **it** was too tired"
+- RNN: Must pass info about "animal" through many steps to reach "it"
+- Transformer: "it" directly attends to "animal" in one step
+
+**Trade-off:** Transformers have $O(n^2)$ memory/compute for attention (quadratic in sequence length), but this is offset by parallelization benefits.
+
+---
+
 ### 103. How does multi-head attention improve model performance?
+
+**Multi-head attention** runs multiple attention mechanisms in parallel, each learning different relationships.
+
+**Why It's Better:**
+1. **Different representation subspaces**: Each head can focus on different aspects
+   - Head 1: Syntax (subject-verb agreement)
+   - Head 2: Semantic similarity
+   - Head 3: Positional relationships
+2. **Richer representations**: Captures diverse patterns simultaneously
+3. **Ensemble effect**: Multiple "views" improve robustness
+
+**Mathematical Form:**
+$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, ..., \text{head}_h)W^O$$
+$$\text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$$
+
+**Parameters:**
+- Instead of one large attention with $d_{model}$ dimensions
+- Use $h$ heads, each with $d_k = d_{model}/h$ dimensions
+- Same total parameters but better expressiveness
+
+```python
+class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model=512, num_heads=8):
+        super().__init__()
+        self.num_heads = num_heads
+        self.d_k = d_model // num_heads
+        
+        self.W_q = nn.Linear(d_model, d_model)
+        self.W_k = nn.Linear(d_model, d_model)
+        self.W_v = nn.Linear(d_model, d_model)
+        self.W_o = nn.Linear(d_model, d_model)
+    
+    def forward(self, x):
+        batch_size, seq_len, d_model = x.shape
+        
+        # Project and split into heads
+        Q = self.W_q(x).view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
+        K = self.W_k(x).view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
+        V = self.W_v(x).view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
+        
+        # Scaled dot-product attention for each head
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.d_k)
+        attn = F.softmax(scores, dim=-1)
+        context = torch.matmul(attn, V)
+        
+        # Concatenate heads and project
+        context = context.transpose(1, 2).contiguous().view(batch_size, seq_len, d_model)
+        return self.W_o(context)
+```
+
+---
+
 ### 104. What are positional encodings and why are they required?
+
+**Problem:** Self-attention is **permutation invariant** → it doesn't know token order!
+- "cat chased mouse" vs "mouse chased cat" would be identical without position info
+
+**Solution:** Add positional information to embeddings so the model knows token positions.
+
+**Two Main Approaches:**
+
+**1. Sinusoidal Positional Encoding (Original Transformer)**
+$$PE_{(pos, 2i)} = \sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
+$$PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
+
+**Advantages:**
+- Can extrapolate to longer sequences than training
+- Deterministic (no learning needed)
+- Different frequencies encode relative positions
+
+**2. Learned Positional Embeddings**
+- Simply learn an embedding for each position (like word embeddings)
+- Used in BERT, GPT-2
+
+```python
+import torch
+import torch.nn as nn
+import math
+
+# Sinusoidal positional encoding
+def get_positional_encoding(max_len, d_model):
+    pe = torch.zeros(max_len, d_model)
+    position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+    div_term = torch.exp(torch.arange(0, d_model, 2).float() * 
+                         (-math.log(10000.0) / d_model))
+    
+    pe[:, 0::2] = torch.sin(position * div_term)
+    pe[:, 1::2] = torch.cos(position * div_term)
+    return pe
+
+# Learned positional embeddings
+class LearnedPositionalEmbedding(nn.Module):
+    def __init__(self, max_len, d_model):
+        super().__init__()
+        self.pos_embedding = nn.Embedding(max_len, d_model)
+    
+    def forward(self, x):
+        batch_size, seq_len, d_model = x.shape
+        positions = torch.arange(seq_len, device=x.device).unsqueeze(0)
+        return x + self.pos_embedding(positions)
+```
+
+**Modern Variants:**
+- **RoPE** (Rotary Positional Embeddings): Used in LLaMA, better for long sequences
+- **ALiBi** (Attention with Linear Biases): No explicit embeddings, just bias attention scores
+
+---
+
 ### 105. Explain LayerNorm vs BatchNorm.
+
+| **Aspect** | **BatchNorm** | **LayerNorm** |
+|------------|--------------|--------------|
+| **Normalizes over** | Batch dimension (across samples) | Feature dimension (within each sample) |
+| **Formula** | $\frac{x - \mu_{batch}}{\sigma_{batch}}$ | $\frac{x - \mu_{layer}}{\sigma_{layer}}$ |
+| **Use Case** | CNNs (images) | Transformers, RNNs (sequences) |
+| **Batch Dependency** | Requires large batch size | Works with batch size = 1 |
+| **Training vs Inference** | Different behavior (uses running stats at inference) | Identical behavior |
+| **Position in Network** | After convolution, before activation | After self-attention or FFN |
+
+**Why Transformers Use LayerNorm:**
+1. **Sequence length variability**: Batch samples may have different lengths → BatchNorm doesn't work well
+2. **Stable with small batches**: Training effectiveness doesn't depend on batch size
+3. **Per-sample normalization**: Each token sequence normalized independently
+
+```python
+import torch
+import torch.nn as nn
+
+# BatchNorm (normalizes across batch for each feature)
+batch_norm = nn.BatchNorm1d(num_features=512)
+x = torch.randn(32, 512, 100)  # [batch, features, seq_len]
+x = batch_norm(x)  # Norm over batch dimension
+
+# LayerNorm (normalizes across features for each sample)
+layer_norm = nn.LayerNorm(normalized_shape=512)
+x = torch.randn(32, 100, 512)  # [batch, seq_len, features]
+x = layer_norm(x)  # Norm over feature dimension
+
+# Manual LayerNorm
+def layer_norm_manual(x, eps=1e-5):
+    mean = x.mean(dim=-1, keepdim=True)
+    std = x.std(dim=-1, keepdim=True)
+    return (x - mean) / (std + eps)
+```
+
+**Interview Tip:** Transformers use LayerNorm because it's stable for variable-length sequences and doesn't depend on batch statistics.
+
+---
+
 ### 106. What is the difference between fine-tuning and feature extraction?
+
+| **Aspect** | **Feature Extraction** | **Fine-tuning** |
+|------------|----------------------|----------------|
+| **Pretrained Weights** | Frozen (no updates) | Unfrozen (updated) |
+| **Training** | Only train new head/classifier | Train entire model (or partial layers) |
+| **Compute** | Fast, low memory | Slower, more memory |
+| **Data Required** | Works with small datasets | Needs more data for best results |
+| **Risk** | Lower risk of overfitting | Can overfit on small data |
+| **Use Case** | Similar task to pretraining | Task differs significantly |
+
+**Feature Extraction:**
+```python
+import torch
+import torchvision.models as models
+
+# Load pretrained ResNet
+model = models.resnet50(pretrained=True)
+
+# Freeze all layers
+for param in model.parameters():
+    param.requires_grad = False
+
+# Replace final layer
+model.fc = torch.nn.Linear(model.fc.in_features, 10)  # 10 classes
+
+# Only train the new classifier
+optimizer = torch.optim.Adam(model.fc.parameters(), lr=0.001)
+```
+
+**Fine-tuning:**
+```python
+# Load pretrained ResNet
+model = models.resnet50(pretrained=True)
+
+# Replace final layer
+model.fc = torch.nn.Linear(model.fc.in_features, 10)
+
+# Train entire model (or use differential learning rates)
+optimizer = torch.optim.Adam([
+    {'params': model.layer4.parameters(), 'lr': 1e-4},  # Last conv block
+    {'params': model.fc.parameters(), 'lr': 1e-3}        # Classifier
+])
+```
+
+**Best Practice (Gradual Unfreezing):**
+1. Start with feature extraction (train only head)
+2. Unfreeze last few layers and fine-tune with low LR
+3. Optionally unfreeze entire model with very low LR
+
+---
+
 ### 107. How does model quantization reduce inference cost?
+
+**Quantization** converts high-precision weights (FP32) to low-precision (INT8, INT4) → smaller model, faster inference.
+
+**Benefits:**
+- **4x smaller model size** (FP32 → INT8)
+- **2-4x faster inference** (integer operations are faster)
+- **Lower memory bandwidth** (critical for edge devices)
+- **Energy efficient** (important for mobile/IoT)
+
+**Types of Quantization:**
+
+| **Type** | **When Applied** | **Accuracy** | **Speed** |
+|----------|----------------|--------------|-----------|
+| **Post-Training Quantization** | After training | Good | Fast to apply |
+| **Quantization-Aware Training (QAT)** | During training | Best | Slower to train |
+
+**Example: PyTorch Quantization**
+```python
+import torch
+import torch.quantization as quant
+
+# 1. Post-Training Static Quantization
+model = torchvision.models.resnet18(pretrained=True)
+model.eval()
+
+# Prepare model for quantization
+model.qconfig = quant.get_default_qconfig('fbgemm')
+model_prepared = quant.prepare(model)
+
+# Calibrate with representative data
+with torch.no_grad():
+    for batch in calibration_data:
+        model_prepared(batch)
+
+# Convert to quantized model
+model_quantized = quant.convert(model_prepared)
+
+# 2. Dynamic Quantization (for LSTM/Transformer)
+model_dynamic_quant = quant.quantize_dynamic(
+    model, {torch.nn.Linear}, dtype=torch.qint8
+)
+
+# 3. Check size reduction
+print(f"Original model: {os.path.getsize('model.pth') / 1e6:.2f} MB")
+print(f"Quantized model: {os.path.getsize('model_quant.pth') / 1e6:.2f} MB")
+```
+
+**INT8 vs INT4:**
+- **INT8**: 1-2% accuracy drop, widely supported
+- **INT4**: 4-8x compression, 3-5% accuracy drop, requires specialized hardware
+
+**Interview Tip:** Quantization is essential for deploying LLMs on edge devices (e.g., LLaMA 7B in FP16 is 14GB, INT4 is ~4GB).
+
+---
+
 ### 108. What is knowledge distillation? How is the student model trained?
+
+**Knowledge Distillation:** Train a small **student** model to mimic a large **teacher** model's behavior.
+
+**Why It Works:**
+- Teacher's "soft targets" (probability distributions) contain more information than hard labels
+- Student learns from teacher's confidence and reasoning patterns
+
+**Training Process:**
+
+1. **Teacher Model**: Large, accurate pretrained model (frozen)
+2. **Student Model**: Smaller model to be trained
+3. **Distillation Loss**:
+   $$L_{distill} = \alpha \cdot L_{CE}(y, y_{student}) + (1-\alpha) \cdot L_{KL}(y_{teacher}, y_{student})$$
+   - $L_{CE}$: Standard cross-entropy with true labels
+   - $L_{KL}$: KL divergence between teacher and student predictions
+   - $\alpha$: Balance between label and teacher knowledge
+
+4. **Temperature Scaling**: Soften probabilities for better knowledge transfer
+   $$p_i = \frac{\exp(z_i/T)}{\sum_j \exp(z_j/T)}$$
+   - Higher $T$ → softer probabilities
+   - Typical $T = 2$ to $5$ during distillation
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class DistillationLoss(nn.Module):
+    def __init__(self, alpha=0.5, temperature=3.0):
+        super().__init__()
+        self.alpha = alpha
+        self.temperature = temperature
+        self.ce_loss = nn.CrossEntropyLoss()
+    
+    def forward(self, student_logits, teacher_logits, labels):
+        # Hard target loss (with true labels)
+        hard_loss = self.ce_loss(student_logits, labels)
+        
+        # Soft target loss (with teacher predictions)
+        soft_student = F.log_softmax(student_logits / self.temperature, dim=-1)
+        soft_teacher = F.softmax(teacher_logits / self.temperature, dim=-1)
+        soft_loss = F.kl_div(soft_student, soft_teacher, reduction='batchmean')
+        soft_loss = soft_loss * (self.temperature ** 2)  # Scale by T^2
+        
+        return self.alpha * hard_loss + (1 - self.alpha) * soft_loss
+
+# Training loop
+teacher_model.eval()
+student_model.train()
+
+for batch in train_loader:
+    images, labels = batch
+    
+    # Get teacher predictions (no grad)
+    with torch.no_grad():
+        teacher_logits = teacher_model(images)
+    
+    # Get student predictions
+    student_logits = student_model(images)
+    
+    # Compute distillation loss
+    loss = distillation_loss(student_logits, teacher_logits, labels)
+    
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+```
+
+**Types:**
+- **Response-based**: Match final outputs (standard distillation)
+- **Feature-based**: Match intermediate layer representations
+- **Relation-based**: Match relationships between samples
+
+**Real-world Examples:**
+- **DistilBERT**: 40% smaller than BERT, 97% accuracy, 60% faster
+- **TinyBERT**: 7.5x smaller, 96% accuracy
+
+---
+
 ### 109. How does curriculum learning improve optimization?
+
+**Curriculum Learning:** Train the model on progressively harder examples (easy → medium → hard), mimicking how humans learn.
+
+**Why It Helps:**
+1. **Faster convergence**: Model learns basic patterns first
+2. **Better generalization**: Gradual difficulty prevents overfitting to hard examples
+3. **Stability**: Easier start prevents early training instability
+4. **Better local minima**: Smooth path through loss landscape
+
+**Implementation Strategies:**
+
+**1. Difficulty-based (by feature)**
+```python
+# Sort samples by difficulty metric
+def compute_difficulty(sample):
+    # Examples: Length, noise level, classification entropy
+    return len(sample['text'])  # Text length as proxy
+
+# Sort and split into curriculum stages
+samples_sorted = sorted(dataset, key=compute_difficulty)
+stage1 = samples_sorted[:len(samples_sorted)//3]    # Easy
+stage2 = samples_sorted[len(samples_sorted)//3:2*len(samples_sorted)//3]  # Medium
+stage3 = samples_sorted[2*len(samples_sorted)//3:]  # Hard
+
+# Train sequentially
+for epoch in range(10):
+    train(model, stage1)
+for epoch in range(10):
+    train(model, stage1 + stage2)
+for epoch in range(10):
+    train(model, stage1 + stage2 + stage3)
+```
+
+**2. Self-paced (model determines difficulty)**
+```python
+def self_paced_curriculum(model, dataset, lambda_):
+    losses = []
+    
+    # Compute loss for each sample
+    for sample in dataset:
+        output = model(sample['input'])
+        loss = criterion(output, sample['label'])
+        losses.append((loss.item(), sample))
+    
+    # Select easier samples (low loss)
+    threshold = np.percentile([l for l, _ in losses], lambda_)
+    selected_samples = [s for l, s in losses if l <= threshold]
+    
+    return selected_samples
+
+# Gradually increase lambda (include more samples)
+for epoch in range(100):
+    lambda_ = min(100, epoch * 2)  # 0 → 100%
+    subset = self_paced_curriculum(model, dataset, lambda_)
+    train(model, subset)
+```
+
+**3. Transfer-based (task progression)**
+```python
+# Start with related but easier tasks
+# Stage 1: Binary classification
+train(model, binary_task)
+
+# Stage 2: Multi-class (3 classes)
+train(model, multiclass_3)
+
+# Stage 3: Full problem (10 classes)
+train(model, multiclass_10)
+```
+
+**Real-world Use Cases:**
+- **NLP**: Train on short sentences first, then long ones
+- **Vision**: Start with high-contrast images, add noisy ones
+- **RL**: Easy game levels before hard ones
+- **Machine Translation**: Short sentences → complex sentences
+
+---
+
 ### 110. Explain gradient checkpointing and why it's used.
+
+**Gradient Checkpointing** trades compute for memory by recomputing activations during backward pass instead of storing them.
+
+**The Memory Problem:**
+- Forward pass stores all activations for backprop
+- For deep networks: Memory $\propto$ depth × batch size
+- Large transformers/LLMs can't fit in GPU memory
+
+**How It Works:**
+1. **Forward pass**: Only save checkpoints at certain layers (discard intermediate activations)
+2. **Backward pass**: Recompute missing activations on-the-fly when needed
+3. **Trade-off**: ~20-30% slower training, but 5-10x less memory
+
+**Example: Without vs With Checkpointing**
+```python
+# Without checkpointing (normal training)
+# Memory: O(n) where n = number of layers
+def forward_normal(x, layers):
+    activations = [x]  # Store all
+    for layer in layers:
+        x = layer(x)
+        activations.append(x)  # Memory grows!
+    return x, activations
+
+# With checkpointing
+# Memory: O(sqrt(n)) with strategic checkpoints
+from torch.utils.checkpoint import checkpoint
+
+def forward_with_checkpoint(x, layers):
+    # Only checkpoint every k layers
+    for i, layer in enumerate(layers):
+        if i % checkpoint_frequency == 0:
+            x = checkpoint(layer, x)  # Recompute during backward
+        else:
+            x = layer(x)
+    return x
+```
+
+**PyTorch Implementation:**
+```python
+import torch
+from torch.utils.checkpoint import checkpoint_sequential
+
+# Method 1: Automatic checkpointing
+model = nn.Sequential(*[nn.Linear(1024, 1024) for _ in range(100)])
+segments = 10  # Checkpoint every 10 layers
+
+def forward_with_checkpointing(input):
+    return checkpoint_sequential(model, segments, input)
+
+# Method 2: Manual checkpointing
+class TransformerBlock(nn.Module):
+    def __init__(self, d_model):
+        super().__init__()
+        self.attention = MultiHeadAttention(d_model)
+        self.ffn = FeedForward(d_model)
+    
+    def forward(self, x):
+        # Checkpoint the attention and FFN blocks
+        x = x + checkpoint(self.attention, x)
+        x = x + checkpoint(self.ffn, x)
+        return x
+
+# Method 3: HuggingFace Transformers
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("bert-base-uncased")
+model.gradient_checkpointing_enable()  # One line!
+```
+
+**Memory Savings Example:**
+- **GPT-3 (175B params)**: Without checkpointing → ~1TB memory needed
+- **With checkpointing**: ~100-200GB (fits on multi-GPU)
+
+**When to Use:**
+- Training very deep networks (>50 layers)
+- Large batch sizes needed but limited GPU memory
+- Training LLMs (almost always enabled)
+- Fine-tuning large models on single GPU
+
+---
+
 ### 111. What is catastrophic forgetting? How do modern models mitigate it?
+
+**Catastrophic Forgetting:** When a neural network "forgets" previously learned tasks after learning new ones.
+
+**Example:**
+1. Train model on French → English translation (90% accuracy)
+2. Train same model on German → English (85% accuracy)
+3. Test on French → English again → **30% accuracy** (forgot French!)
+
+**Why It Happens:**
+- Neural networks optimize globally → new task overwrites old weights
+- Unlike humans, no mechanism to protect important knowledge
+
+**Mitigation Strategies:**
+
+**1. Elastic Weight Consolidation (EWC)**
+- Identify important weights for old task (using Fisher Information)
+- Add penalty when updating those weights
+
+```python
+class EWC:
+    def __init__(self, model, dataset, lambda_=1000):
+        self.model = model
+        self.lambda_ = lambda_
+        self.fisher = self._compute_fisher(dataset)
+        self.old_params = {n: p.clone() for n, p in model.named_parameters()}
+    
+    def _compute_fisher(self, dataset):
+        fisher = {n: torch.zeros_like(p) for n, p in self.model.named_parameters()}
+        self.model.eval()
+        
+        for batch in dataset:
+            self.model.zero_grad()
+            output = self.model(batch)
+            loss = F.cross_entropy(output, batch['labels'])
+            loss.backward()
+            
+            for n, p in self.model.named_parameters():
+                fisher[n] += p.grad.data ** 2
+        
+        return {n: f / len(dataset) for n, f in fisher.items()}
+    
+    def penalty(self):
+        loss = 0
+        for n, p in self.model.named_parameters():
+            loss += (self.fisher[n] * (p - self.old_params[n]) ** 2).sum()
+        return self.lambda_ * loss
+
+# Training with EWC
+ewc = EWC(model, old_task_data)
+for batch in new_task_data:
+    loss = criterion(model(batch), batch['labels'])
+    loss = loss + ewc.penalty()  # Protect old knowledge
+    loss.backward()
+    optimizer.step()
+```
+
+**2. Progressive Neural Networks**
+- Add new columns/modules for new tasks
+- Old parameters frozen, new task uses old features via lateral connections
+
+**3. Memory Replay (Experience Replay)**
+- Store subset of old task data
+- Mix old and new data during training
+
+```python
+class ReplayBuffer:
+    def __init__(self, buffer_size=1000):
+        self.buffer = []
+        self.buffer_size = buffer_size
+    
+    def add(self, task_data):
+        # Store samples from old task
+        samples = random.sample(task_data, min(len(task_data), self.buffer_size))
+        self.buffer.extend(samples)
+        if len(self.buffer) > self.buffer_size:
+            self.buffer = random.sample(self.buffer, self.buffer_size)
+    
+    def get_batch(self, new_batch):
+        # Mix old and new data
+        old_samples = random.sample(self.buffer, len(new_batch) // 2)
+        return new_batch + old_samples
+
+replay_buffer = ReplayBuffer()
+replay_buffer.add(task1_data)
+
+for batch in task2_data:
+    mixed_batch = replay_buffer.get_batch(batch)
+    train(model, mixed_batch)
+```
+
+**4. Parameter Isolation**
+- Use **adapters** (small trainable modules) for each task
+- Main model frozen, only adapters updated
+
+**5. Knowledge Distillation**
+- Keep old model as teacher
+- New model must match old predictions on old tasks
+
+**Modern LLM Approach (RLHF Context):**
+- Use **PEFT methods** (LoRA, adapters) → only train small modules
+- **Regularization loss** to keep close to base model
+- **Multi-task training** from the start
+
+---
+
 ### 112. How does contrastive learning work? (e.g., SimCLR, CLIP)
+
+**Contrastive Learning:** Learn representations by pulling similar examples together and pushing dissimilar ones apart.
+
+**Core Idea:**
+- Positive pairs (similar): Same image with augmentations, image-text pairs
+- Negative pairs (dissimilar): Different images/texts
+- Goal: Maximize agreement for positives, minimize for negatives
+
+**Mathematical Objective (InfoNCE Loss):**
+$$L = -\log \frac{\exp(\text{sim}(z_i, z_j) / \tau)}{\sum_{k=1}^{N} \exp(\text{sim}(z_i, z_k) / \tau)}$$
+- $z_i, z_j$: Positive pair embeddings
+- $z_k$: Negative samples
+- $\tau$: Temperature parameter
+- $\text{sim}$: Cosine similarity
+
+**SimCLR (Visual Self-Supervised Learning):**
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class SimCLR(nn.Module):
+    def __init__(self, encoder, projection_dim=128):
+        super().__init__()
+        self.encoder = encoder  # e.g., ResNet
+        self.projection = nn.Sequential(
+            nn.Linear(encoder.output_dim, 2048),
+            nn.ReLU(),
+            nn.Linear(2048, projection_dim)
+        )
+    
+    def forward(self, x):
+        h = self.encoder(x)
+        z = self.projection(h)
+        return F.normalize(z, dim=-1)
+
+def simclr_loss(z_i, z_j, temperature=0.5):
+    """
+    z_i, z_j: [batch_size, projection_dim] - positive pairs
+    """
+    batch_size = z_i.shape[0]
+    
+    # Concatenate positive pairs
+    z = torch.cat([z_i, z_j], dim=0)  # [2*batch_size, dim]
+    
+    # Compute similarity matrix
+    sim_matrix = torch.mm(z, z.T) / temperature  # [2N, 2N]
+    
+    # Create mask for positive pairs
+    mask = torch.eye(2 * batch_size, device=z.device).bool()
+    sim_matrix.masked_fill_(mask, -9e15)  # Remove self-similarity
+    
+    # Positive pairs are at positions (i, i+N) and (i+N, i)
+    pos_sim = torch.cat([
+        torch.diag(sim_matrix, batch_size),
+        torch.diag(sim_matrix, -batch_size)
+    ])
+    
+    # Compute loss
+    loss = -pos_sim + torch.logsumexp(sim_matrix, dim=-1)
+    return loss.mean()
+
+# Training
+model = SimCLR(encoder=ResNet50())
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+for batch in dataloader:
+    # Apply two different augmentations to same image
+    x_i = augment_1(batch)  # Crop, color jitter, blur
+    x_j = augment_2(batch)  # Different augmentation
+    
+    z_i = model(x_i)
+    z_j = model(x_j)
+    
+    loss = simclr_loss(z_i, z_j)
+    
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+```
+
+**CLIP (Image-Text Contrastive Learning):**
+
+```python
+class CLIP(nn.Module):
+    def __init__(self, image_encoder, text_encoder, embed_dim=512):
+        super().__init__()
+        self.image_encoder = image_encoder  # Vision Transformer
+        self.text_encoder = text_encoder    # Transformer
+        self.temperature = nn.Parameter(torch.ones([]) * 0.07)
+    
+    def forward(self, images, texts):
+        # Encode and normalize
+        image_features = F.normalize(self.image_encoder(images), dim=-1)
+        text_features = F.normalize(self.text_encoder(texts), dim=-1)
+        
+        # Compute similarity matrix
+        logits = image_features @ text_features.T / self.temperature
+        
+        # Symmetric loss (image→text and text→image)
+        labels = torch.arange(len(images), device=images.device)
+        loss_i = F.cross_entropy(logits, labels)
+        loss_t = F.cross_entropy(logits.T, labels)
+        
+        return (loss_i + loss_t) / 2
+
+# Zero-shot classification using CLIP
+def zero_shot_classify(model, image, class_names):
+    # Create text prompts
+    prompts = [f"A photo of a {c}" for c in class_names]
+    
+    with torch.no_grad():
+        image_features = model.image_encoder(image)
+        text_features = torch.stack([model.text_encoder(p) for p in prompts])
+        
+        # Compute similarities
+        similarity = (image_features @ text_features.T).softmax(dim=-1)
+    
+    return class_names[similarity.argmax()]
+```
+
+**Why It Works:**
+1. **No labels needed**: Self-supervised (create positives via augmentation)
+2. **Rich representations**: Must learn invariances and semantics
+3. **Transfer learning**: Representations work well for downstream tasks
+
+**Key Applications:**
+- **SimCLR**: Image classification with 10% labeled data achieves 90% supervised performance
+- **CLIP**: Zero-shot classification, image search, multimodal understanding
+
+---
+
 ### 113. Why is cross-entropy widely used for classification?
+
+**Cross-entropy** measures the difference between predicted probability distribution and true distribution.
+
+**Mathematical Form:**
+$$\text{CE} = -\sum_{i=1}^{C} y_i \log(\hat{y}_i)$$
+- $y_i$: True label (one-hot: $[0,0,1,0]$)
+- $\hat{y}_i$: Predicted probability
+- For binary: $\text{CE} = -[y \log(\hat{y}) + (1-y) \log(1-\hat{y})]$
+
+**Why It's the Best Choice:**
+
+**1. Probabilistic Interpretation**
+- Equivalent to **maximum likelihood estimation** (MLE)
+- Minimizing CE = maximizing likelihood of correct class
+
+**2. Relationship to KL Divergence**
+$$\text{CE}(p, q) = H(p) + D_{KL}(p \| q)$$
+- $H(p)$: Entropy of true distribution (constant)
+- Minimizing CE = minimizing KL divergence
+
+**3. Gradient Properties**
+- Output gradient: $\frac{\partial L}{\partial z_i} = \hat{y}_i - y_i$
+- Simple, well-behaved gradients (no saturation like MSE)
+
+**4. Handles Class Probabilities Naturally**
+- Outputs are probabilities (via softmax)
+- Penalizes confident wrong predictions heavily
+
+**Comparison with Alternatives:**
+
+| **Loss** | **Formula** | **Use Case** | **Issue** |
+|----------|------------|-------------|-----------|
+| **Cross-Entropy** | $-\sum y_i \log(\hat{y}_i)$ | Classification (standard) | Perfect ✓ |
+| **MSE** | $(y - \hat{y})^2$ | Regression | Wrong for classification (poor gradients) |
+| **Hinge** | $\max(0, 1-y\hat{y})$ | SVM | Not probabilistic |
+| **Focal Loss** | $-(1-\hat{y})^\gamma \log(\hat{y})$ | Imbalanced data | Specialized |
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# Binary Cross-Entropy
+bce_loss = nn.BCEWithLogitsLoss()  # Includes sigmoid
+logits = model(x)  # Raw scores
+loss = bce_loss(logits, labels.float())
+
+# Multi-class Cross-Entropy
+ce_loss = nn.CrossEntropyLoss()  # Includes softmax
+logits = model(x)  # [batch_size, num_classes]
+loss = ce_loss(logits, labels)  # labels are class indices
+
+# Manual implementation
+def cross_entropy_manual(logits, labels):
+    # Apply softmax
+    probs = F.softmax(logits, dim=-1)
+    
+    # Get probability of true class
+    true_class_probs = probs[torch.arange(len(labels)), labels]
+    
+    # Compute negative log likelihood
+    return -torch.log(true_class_probs + 1e-10).mean()
+
+# With label smoothing (regularization)
+ce_smooth = nn.CrossEntropyLoss(label_smoothing=0.1)
+loss = ce_smooth(logits, labels)
+```
+
+**Interview Tip:** Cross-entropy is optimal for classification because it directly optimizes the likelihood of the correct class and has clean gradients that avoid saturation.
+
+---
+
 ### 114. Explain the differences between Adam, AdamW, and RMSProp.
+
+**Optimizers** adapt learning rates per parameter for faster convergence.
+
+| **Optimizer** | **Key Feature** | **Best For** | **Issue** |
+|--------------|----------------|-------------|-----------|
+| **SGD** | Constant LR | Simple problems, with momentum | Slow, requires LR tuning |
+| **RMSProp** | Adaptive LR per parameter | RNNs, non-stationary problems | Can decay LR too fast |
+| **Adam** | RMSProp + momentum | General purpose (most popular) | Poor generalization sometimes |
+| **AdamW** | Adam + decoupled weight decay | Transformers, LLMs (SOTA) | Slightly slower |
+
+**RMSProp (Root Mean Square Propagation):**
+$$v_t = \beta v_{t-1} + (1-\beta) g_t^2$$
+$$\theta_t = \theta_{t-1} - \frac{\eta}{\sqrt{v_t + \epsilon}} g_t$$
+- Maintains moving average of squared gradients
+- Adapts LR per parameter (large gradients → smaller steps)
+- $\beta \approx 0.9$, $\eta = 0.001$
+
+**Adam (Adaptive Moment Estimation):**
+$$m_t = \beta_1 m_{t-1} + (1-\beta_1) g_t \quad \text{(momentum)}$$
+$$v_t = \beta_2 v_{t-1} + (1-\beta_2) g_t^2 \quad \text{(RMSProp)}$$
+$$\hat{m}_t = \frac{m_t}{1-\beta_1^t}, \quad \hat{v}_t = \frac{v_t}{1-\beta_2^t} \quad \text{(bias correction)}$$
+$$\theta_t = \theta_{t-1} - \frac{\eta}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t$$
+
+- Combines momentum + adaptive LR
+- $\beta_1 = 0.9$, $\beta_2 = 0.999$, $\eta = 0.001$
+
+**AdamW (Adam with Decoupled Weight Decay):**
+- **Problem with Adam**: Weight decay coupled with gradient, affecting adaptive LR
+- **AdamW**: Separates weight decay from gradient update
+
+$$\theta_t = \theta_{t-1} - \eta \left( \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon} + \lambda \theta_{t-1} \right)$$
+- $\lambda$: Weight decay coefficient (typically 0.01)
+
+```python
+import torch
+import torch.optim as optim
+
+# RMSProp
+optimizer = optim.RMSprop(model.parameters(), lr=0.001, alpha=0.9)
+
+# Adam
+optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999))
+
+# AdamW (better for transformers)
+optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
+
+# Training loop
+for batch in dataloader:
+    optimizer.zero_grad()
+    loss = criterion(model(batch), labels)
+    loss.backward()
+    optimizer.step()
+
+# With learning rate scheduling
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
+scheduler = CosineAnnealingLR(optimizer, T_max=100)
+for epoch in range(100):
+    train(model, optimizer)
+    scheduler.step()
+```
+
+**When to Use Each:**
+
+```python
+# Computer Vision (CNNs)
+optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
+
+# RNNs / Older architectures
+optimizer = optim.RMSprop(model.parameters(), lr=0.001)
+
+# General ML / Small networks
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# Transformers / LLMs (BEST)
+optimizer = optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.01)
+```
+
+**Modern Variants:**
+- **Lion**: More memory-efficient than AdamW
+- **Adafactor**: Memory-efficient for very large models
+- **LAMB**: Large batch training (BERT)
+
+**Interview Tip:** For transformers and LLMs, always use **AdamW** with proper weight decay. For CNNs, SGD with momentum often generalizes better.
+
+---
+
 ### 115. What is a mixture-of-experts model, and why is MoE efficient?
+
+**Mixture-of-Experts (MoE):** A model architecture with multiple specialized "expert" networks and a gating network that routes inputs to relevant experts.
+
+**Architecture:**
+1. **Experts**: $N$ independent neural networks (e.g., FFN layers)
+2. **Gating Network**: Learns to route each input to top-$k$ experts
+3. **Output**: Weighted combination of selected experts
+
+**Mathematical Form:**
+$$y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)$$
+- $E_i$: Expert $i$'s output
+- $G(x)_i$: Gating weight for expert $i$ (via softmax)
+- In practice, only top-$k$ experts activated (sparse routing)
+
+**Why MoE is Efficient:**
+
+| **Aspect** | **Dense Model** | **MoE Model** |
+|------------|----------------|--------------|
+| **Parameters** | All used per token | Only ~1-2 experts per token |
+| **Compute** | $O(d_{model} \times d_{ff})$ | $O(d_{model} \times d_{ff} / N)$ per token |
+| **Model Size** | 7B params → 7B active | 100B params → 7B active (sparsity) |
+| **Scaling** | Linear cost increase | Sub-linear (conditional compute) |
+
+**Efficiency Gains:**
+- **10-100x more parameters** with similar compute
+- **Specialization**: Each expert learns different patterns
+- **Sparse activation**: Only relevant experts process each input
+
+**Implementation Example:**
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class MixtureOfExperts(nn.Module):
+    def __init__(self, input_dim, expert_dim, num_experts=8, top_k=2):
+        super().__init__()
+        self.num_experts = num_experts
+        self.top_k = top_k
+        
+        # Gating network
+        self.gate = nn.Linear(input_dim, num_experts)
+        
+        # Expert networks
+        self.experts = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(input_dim, expert_dim),
+                nn.ReLU(),
+                nn.Linear(expert_dim, input_dim)
+            ) for _ in range(num_experts)
+        ])
+    
+    def forward(self, x):
+        # Compute gating scores
+        gate_logits = self.gate(x)  # [batch, num_experts]
+        
+        # Select top-k experts per input
+        top_k_logits, top_k_indices = torch.topk(gate_logits, self.top_k, dim=-1)
+        top_k_gates = F.softmax(top_k_logits, dim=-1)  # [batch, top_k]
+        
+        # Initialize output
+        output = torch.zeros_like(x)
+        
+        # Route to selected experts
+        for i in range(self.top_k):
+            expert_idx = top_k_indices[:, i]  # [batch]
+            gate_weight = top_k_gates[:, i].unsqueeze(-1)  # [batch, 1]
+            
+            # Apply corresponding expert (batched)
+            for expert_id in range(self.num_experts):
+                mask = (expert_idx == expert_id)
+                if mask.any():
+                    expert_input = x[mask]
+                    expert_output = self.experts[expert_id](expert_input)
+                    output[mask] += gate_weight[mask] * expert_output
+        
+        return output
+
+# Load balancing loss (ensure experts used equally)
+def load_balancing_loss(gate_logits, top_k_indices, num_experts):
+    # Count how often each expert is selected
+    expert_counts = torch.zeros(num_experts, device=gate_logits.device)
+    for i in range(num_experts):
+        expert_counts[i] = (top_k_indices == i).float().sum()
+    
+    # Penalize imbalance
+    target_count = top_k_indices.numel() / num_experts
+    return ((expert_counts - target_count) ** 2).mean()
+```
+
+**Real-World Examples:**
+
+**1. Switch Transformer (Google, 2021)**
+- 1.6 **trillion** parameters
+- Only 30B active per token (top-1 routing)
+- 7x faster than dense model with same quality
+
+**2. GPT-4 (Rumored Architecture)**
+- ~1.8T total parameters
+- 8 experts, top-2 routing → ~220B active
+- Enables high capacity with reasonable inference cost
+
+**Challenges:**
+1. **Load Balancing**: Some experts may be underused (need auxiliary loss)
+2. **Training Complexity**: Requires careful initialization
+3. **Communication Overhead**: Expert parallelism across GPUs
+
+```python
+# Training with load balancing
+def train_moe(model, batch):
+    output, gate_logits, top_k_indices = model(batch)
+    
+    # Task loss
+    task_loss = criterion(output, labels)
+    
+    # Load balancing loss (encourage uniform expert usage)
+    balance_loss = load_balancing_loss(gate_logits, top_k_indices, num_experts)
+    
+    # Combined loss
+    total_loss = task_loss + 0.01 * balance_loss
+    
+    total_loss.backward()
+    optimizer.step()
+```
+
+**Interview Tip:** MoE enables massive scale while keeping inference cost manageable—you get a trillion-parameter model that costs like a 100B model to run. The key is **sparse activation** via routing.
 
 ---
 
