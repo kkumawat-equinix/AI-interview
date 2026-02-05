@@ -3031,28 +3031,1621 @@ def train_moe(model, batch):
 ---
 
 ### B. Large Language Models (LLMs) & GenAI (116–135)
+
 ### 116. How does a decoder-only Transformer (GPT architecture) work?
+
+**Decoder-only Transformers** (like GPT) generate text autoregressively by predicting the next token based on previous tokens.
+
+**Key Characteristics:**
+1. **Causal/Masked Self-Attention**: Can only attend to previous tokens (no future leakage)
+2. **Autoregressive Generation**: Generates one token at a time, left-to-right
+3. **Pre-training Objective**: Next-token prediction (language modeling)
+
+**Architecture Components:**
+
+```
+Input: "The cat sat on the"
+│
+├─ Token Embedding + Positional Encoding
+│
+├─ Decoder Block 1
+│  ├─ Masked Multi-Head Self-Attention  ← Only sees past tokens
+│  ├─ Layer Normalization
+│  ├─ Feed-Forward Network (MLP)
+│  └─ Layer Normalization
+│
+├─ Decoder Block 2...N (repeated)
+│
+├─ Final Layer Norm
+├─ Output Projection (to vocabulary)
+└─ Softmax → Next token probabilities
+```
+
+**Masked Self-Attention (Causal Mask):**
+```python
+import torch
+import torch.nn.functional as F
+
+def causal_self_attention(Q, K, V, mask=None):
+    d_k = Q.size(-1)
+    scores = torch.matmul(Q, K.transpose(-2, -1)) / torch.sqrt(torch.tensor(d_k, dtype=torch.float32))
+    
+    # Apply causal mask (prevent attending to future tokens)
+    seq_len = Q.size(-2)
+    causal_mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool()
+    scores = scores.masked_fill(causal_mask, float('-inf'))
+    
+    attention_weights = F.softmax(scores, dim=-1)
+    output = torch.matmul(attention_weights, V)
+    return output, attention_weights
+```
+
+**Training Objective:**
+$$\mathcal{L} = -\sum_{t=1}^{T} \log P(x_t | x_{<t})$$
+
+**Real-world Examples:** GPT-3/4 (175B-1.8T params), LLaMA (7B-70B), Codex
+
+---
+
 ### 117. What is the architecture difference between GPT, BERT, and T5?
+
+| **Model** | **Architecture** | **Attention** | **Training Objective** | **Use Case** |
+|-----------|-----------------|--------------|----------------------|-------------|
+| **GPT** | Decoder-only | Causal (unidirectional) | Next token prediction | Text generation, completion |
+| **BERT** | Encoder-only | Bidirectional | Masked Language Model (MLM) | Classification, NER, QA |
+| **T5** | Encoder-Decoder | Encoder: bidirectional<br>Decoder: causal | Text-to-text (all tasks) | Translation, summarization, QA |
+
+**1. GPT (Generative Pre-trained Transformer)**
+- Stack of decoder blocks only
+- Causal self-attention (can't see future)
+- Trained to predict next token
+- **Best For:** Text generation, few-shot learning, creative writing
+
+**2. BERT (Bidirectional Encoder Representations)**
+- Stack of encoder blocks only
+- Bidirectional attention (sees full context)
+- Trained with masked language modeling
+```python
+# Objective: Predict masked tokens
+Input:  "The [MASK] sat on the [MASK]"
+Target: "The cat sat on the mat"
+```
+- **Best For:** Classification, NER, QA, embeddings
+
+**3. T5 (Text-to-Text Transfer Transformer)**
+- Full encoder-decoder architecture
+- All tasks converted to text-to-text format
+```python
+# Translation
+Input:  "translate English to French: Hello world"
+Output: "Bonjour le monde"
+
+# Classification
+Input:  "sentiment: This movie was great!"
+Output: "positive"
+```
+- **Best For:** Multi-task learning, translation, summarization
+
+**Modern Trend:** Decoder-only models (GPT-style) dominate because of better few-shot learning and unified architecture.
+
+---
+
 ### 118. How does tokenization influence LLM performance?
+
+**Tokenization** breaks text into subword units that the model processes, significantly impacting efficiency, vocabulary size, and multilingual performance.
+
+**Common Methods:**
+
+| **Method** | **How It Works** | **Vocabulary Size** | **Used In** |
+|------------|-----------------|-------------------|-------------|
+| **BPE** (Byte Pair Encoding) | Merges frequent character pairs | 30K-50K | GPT-2, GPT-3 |
+| **WordPiece** | Similar to BPE, likelihood-based | 30K | BERT |
+| **Unigram** | Probabilistic subword segmentation | Variable | T5, XLNet |
+| **SentencePiece** | Language-agnostic | 32K-64K | LLaMA, BLOOM |
+
+**Impact on Performance:**
+
+**1. Vocabulary Size Trade-offs**
+```python
+# Character-level: Very long sequences, slow
+Text: "machine learning"
+Tokens: ['m','a','c','h','i','n','e',' ','l','e','a','r','n','i','n','g']  # 16 tokens
+
+# Word-level: Huge vocabulary, many UNK tokens
+Tokens: ['machine', 'learning']  # 2 tokens
+
+# Subword (BPE): Optimal balance
+Tokens: ['machine', 'lear', 'ning']  # 3 tokens
+```
+
+**2. Out-of-Vocabulary Handling**
+```python
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+
+# Rare word broken into subwords
+print(tokenizer.tokenize("antidisestablishmentarianism"))
+# ['ant', 'idis', 'establishment', 'arian', 'ism']
+```
+
+**3. Context Window Impact**
+```python
+# GPT-4 context: 8K tokens
+# - Efficient tokenization: ~6K words
+# - Inefficient tokenization: ~3K words
+```
+
+**4. Numerical Reasoning Issues**
+```python
+# Poor tokenization hurts math
+print(tokenizer.tokenize("1234"))   # ['123', '4'] - fragmented!
+print(tokenizer.tokenize("2024"))   # ['202', '4']
+```
+
+**Interview Tip:** Modern models use SentencePiece or BPE with 32K-50K token vocabularies for optimal balance between sequence length and vocabulary size.
+
+---
+
 ### 119. Explain Rotary Positional Embeddings (RoPE).
+
+**RoPE (Rotary Position Embedding)** encodes position information by rotating token embeddings, enabling better length extrapolation and relative position modeling.
+
+**Why RoPE is Better:**
+
+| **Method** | **Extrapolation** | **Used In** |
+|------------|------------------|-------------|
+| **Sinusoidal** | Poor | Original Transformer |
+| **Learned** | Poor | BERT, GPT-2 |
+| **RoPE** | Excellent | LLaMA, GPT-Neo, PaLM |
+| **ALiBi** | Good | BLOOM, MPT |
+
+**Mathematical Intuition:**
+
+Instead of adding position info, RoPE **rotates** query and key vectors by an angle proportional to their position:
+
+$$f_q(x, m) = (W_qx) \cdot e^{im\theta}$$
+$$f_k(x, n) = (W_kx) \cdot e^{in\theta}$$
+
+**Key Property:** The dot product between rotated $q$ and $k$ only depends on their **relative distance** $(m-n)$:
+$$q_m^T k_n = (W_qx_m)^T (W_kx_n) \cdot e^{i(m-n)\theta}$$
+
+**Implementation:**
+```python
+import torch
+import math
+
+def precompute_rope_freqs(dim, max_seq_len, theta=10000.0):
+    """Precompute rotation frequencies for RoPE"""
+    freqs = 1.0 / (theta ** (torch.arange(0, dim, 2).float() / dim))
+    positions = torch.arange(max_seq_len)
+    angles = positions[:, None] * freqs[None, :]  # [max_seq_len, dim/2]
+    return torch.cos(angles), torch.sin(angles)
+
+def apply_rope(x, cos, sin):
+    """Apply rotary positional embeddings
+    x: [batch, seq_len, num_heads, head_dim]
+    """
+    seq_len = x.shape[1]
+    x1 = x[..., ::2]  # Even dimensions
+    x2 = x[..., 1::2]  # Odd dimensions
+    
+    # Apply rotation
+    rotated_x1 = x1 * cos[:seq_len] - x2 * sin[:seq_len]
+    rotated_x2 = x1 * sin[:seq_len] + x2 * cos[:seq_len]
+    
+    rotated = torch.stack([rotated_x1, rotated_x2], dim=-1).flatten(-2)
+    return rotated
+```
+
+**Advantages:**
+1. **Better Length Extrapolation** - Trained on 2K tokens → can handle 4K-8K at inference
+2. **Relative Position Awareness** - Naturally encodes relative distances
+3. **Efficient** - No additional parameters, computationally cheap
+4. **Works Across Lengths** - No retraining needed for longer contexts
+
+**Interview Tip:** RoPE is standard for modern LLMs (LLaMA, GPT-NeoX) because it enables better length generalization through rotation operations.
+
+---
+
 ### 120. What is the KV cache? Why does it speed up inference?
+
+**KV Cache** stores previously computed Key and Value matrices during autoregressive generation, avoiding redundant computation.
+
+**The Problem (Without KV Cache):**
+
+During generation, each new token requires re-computing attention for **all previous tokens**:
+
+```python
+# WITHOUT caching
+Step 1: Compute Q, K, V for token 1
+Step 2: Compute Q, K, V for tokens [1, 2]  ← Recomputes K,V for token 1!
+Step 3: Compute Q, K, V for tokens [1, 2, 3]  ← Recomputes K,V for tokens 1,2!
+# Total complexity: O(n²) for generating n tokens
+```
+
+**The Solution (With KV Cache):**
+
+```python
+# WITH caching
+Step 1: Compute Q, K, V for token 1 → Cache K_1, V_1
+Step 2: Compute Q, K, V for token 2 only → Use cached K_1, V_1
+Step 3: Compute Q, K, V for token 3 only → Use cached K_1, K_2, V_1, V_2
+# Total complexity: O(n)
+```
+
+**Implementation:**
+```python
+import torch
+import torch.nn as nn
+
+class GPTWithKVCache(nn.Module):
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+        self.num_heads = num_heads
+        self.head_dim = d_model // num_heads
+        
+        self.q_proj = nn.Linear(d_model, d_model)
+        self.k_proj = nn.Linear(d_model, d_model)
+        self.v_proj = nn.Linear(d_model, d_model)
+        self.o_proj = nn.Linear(d_model, d_model)
+    
+    def forward(self, x, kv_cache=None, use_cache=False):
+        """
+        x: [batch, seq_len, d_model] (seq_len=1 when using cache)
+        kv_cache: tuple of (past_keys, past_values) or None
+        """
+        batch_size, seq_len, d_model = x.shape
+        
+        # Compute Q, K, V for current token(s)
+        Q = self.q_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim)
+        K = self.k_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim)
+        V = self.v_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim)
+        
+        # If using cache, concatenate with past K,V
+        if kv_cache is not None:
+            past_K, past_V = kv_cache
+            K = torch.cat([past_K, K], dim=1)
+            V = torch.cat([past_V, V], dim=1)
+        
+        # Standard attention...
+        Q = Q.transpose(1, 2)
+        K = K.transpose(1, 2)
+        V = V.transpose(1, 2)
+        
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / (self.head_dim ** 0.5)
+        attn = torch.softmax(scores, dim=-1)
+        output = torch.matmul(attn, V)
+        
+        output = output.transpose(1, 2).contiguous().view(batch_size, seq_len, d_model)
+        output = self.o_proj(output)
+        
+        if use_cache:
+            new_cache = (K.transpose(1, 2), V.transpose(1, 2))
+            return output, new_cache
+        return output
+```
+
+**Memory Usage:**
+```python
+# For LLaMA-7B generating 2048 tokens:
+# - 32 layers, 32 heads, head_dim=128
+# - KV cache per layer: 2 * 32 * 2048 * 128 * 2 bytes (FP16)
+# - Total: ~2GB per sequence
+```
+
+**Speed Improvement:**
+
+| **Metric** | **Without Cache** | **With Cache** | **Speedup** |
+|------------|------------------|---------------|-------------|
+| **Computation** | $O(n^2)$ | $O(n)$ | n× faster |
+| **Real-world** | 5 tokens/sec | 50-100 tokens/sec | 10-20× |
+
+**HuggingFace Usage:**
+```python
+from transformers import AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+output = model.generate(
+    input_ids,
+    max_length=50,
+    use_cache=True  # Default: True
+)
+```
+
+**Interview Tip:** KV cache is essential for efficient LLM inference. It trades memory (storing past K,V) for speed (avoiding recomputation), achieving 10-20× speedup. Cache size grows linearly with sequence length.
+
+---
+
 ### 121. What is LoRA and why is it better than full fine-tuning?
+
+**LoRA (Low-Rank Adaptation)** is a parameter-efficient fine-tuning method that trains small low-rank matrices instead of updating all model weights.
+
+**Core Idea:**
+
+Instead of updating full weight matrix $W \in \mathbb{R}^{d \times k}$, inject trainable low-rank decomposition:
+
+$$W' = W_0 + \Delta W = W_0 + BA$$
+
+Where:
+- $W_0$: Frozen pre-trained weights
+- $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times k}$: Trainable low-rank matrices
+- $r \ll \min(d, k)$: Rank (typically 4-64)
+
+**Parameter Reduction:**
+- Full fine-tuning: Update all $d \times k$ parameters
+- LoRA: Only train $(d + k) \times r$ parameters 
+- For $r=8$, $d=k=4096$: **0.2%** of original parameters!
+
+**Advantages:**
+
+| **Aspect** | **Full Fine-tuning** | **LoRA** |
+|------------|---------------------|----------|
+| **Trainable Params** | 100% (7B for LLaMA-7B) | 0.1-1% (~10M) |
+| **Memory** | High | Low |
+| **Training Speed** | Slow | 2-3× faster |
+| **Storage** | 14GB (FP16) | 10-50MB |
+| **Multi-task** | Need separate models | Swap adapters |
+| **Quality** | Best | ~98-99% |
+
+**Implementation:**
+```python
+import torch
+import torch.nn as nn
+
+class LoRALayer(nn.Module):
+    def __init__(self, in_features, out_features, rank=8, alpha=16):
+        super().__init__()
+        self.rank = rank
+        self.alpha = alpha
+        
+        # LoRA matrices
+        self.lora_A = nn.Parameter(torch.randn(in_features, rank) * 0.01)
+        self.lora_B = nn.Parameter(torch.zeros(rank, out_features))
+        
+        self.scaling = alpha / rank
+    
+    def forward(self, x):
+        return (x @ self.lora_A @ self.lora_B) * self.scaling
+
+class LinearWithLoRA(nn.Module):
+    def __init__(self, linear_layer, rank=8, alpha=16):
+        super().__init__()
+        # Freeze original layer
+        self.linear = linear_layer
+        for param in self.linear.parameters():
+            param.requires_grad = False
+        
+        # Add LoRA
+        self.lora = LoRALayer(
+            linear_layer.in_features,
+            linear_layer.out_features,
+            rank=rank,
+            alpha=alpha
+        )
+    
+    def forward(self, x):
+        return self.linear(x) + self.lora(x)
+```
+
+**Using HuggingFace PEFT:**
+```python
+from transformers import AutoModelForCausalLM
+from peft import LoraConfig, get_peft_model
+
+# Load base model
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+# Configure LoRA
+lora_config = LoraConfig(
+    r=16,  # Rank
+    lora_alpha=32,  # Scaling factor
+    target_modules=["q_proj", "v_proj"],  # Which layers
+    lora_dropout=0.05,
+    task_type="CAUSAL_LM"
+)
+
+# Apply LoRA
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+# Output: trainable params: 4.2M || all params: 6.7B || trainable%: 0.06%
+
+# Save only LoRA weights (10-50MB)
+model.save_pretrained("./lora_adapters")
+```
+
+**Multi-Task with LoRA:**
+```python
+# Train separate adapters for different tasks
+# Task 1: Summarization (20 MB)
+# Task 2: Code generation (20 MB)
+# Task 3: Translation (20 MB)
+
+# At inference: Swap adapters (same base model!)
+from peft import PeftModel
+base_model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+# For summarization:
+model = PeftModel.from_pretrained(base_model, "./lora_summary")
+
+# For code generation:
+model = PeftModel.from_pretrained(base_model, "./lora_code")
+
+# Total storage: 14 GB (base) + 60 MB (3 adapters) vs 42 GB (3 full models)
+```
+
+**Interview Tip:** LoRA enables fine-tuning 7B-70B models on a single GPU by training only 0.1-1% of parameters. Achieves near-full fine-tuning quality while being 100× more storage-efficient and 2-3× faster.
+
+---
 ### 122. Explain QLoRA and 4-bit quantization.
+
+**QLoRA (Quantized LoRA)** combines 4-bit quantization with LoRA to enable fine-tuning massive models (65B+) on consumer GPUs.
+
+**Key Innovation:** Quantize the base model to 4-bit, keep LoRA adapters in higher precision (16-bit).
+
+**Memory Reduction:**
+
+| **Model** | **Full (FP16)** | **LoRA (FP16)** | **QLoRA (4-bit)** | **GPU** |
+|-----------|----------------|----------------|------------------|----------|
+| **LLaMA-7B** | 14 GB | 14 GB + 10 MB | 4 GB + 10 MB | 8 GB GPU |
+| **LLaMA-13B** | 26 GB | 26 GB + 20 MB | 7 GB + 20 MB | 12 GB GPU |
+| **LLaMA-65B** | 130 GB | 130 GB + 100 MB | 33 GB + 100 MB | 48 GB GPU |
+
+**4-bit NormalFloat (NF4):**
+
+Standard quantization maps values uniformly, but neural network weights follow a **normal distribution**. NF4 assigns more quantization bins near zero.
+
+```python
+# Standard 4-bit: [-8, -7, ..., 0, ..., 7] (uniform)
+# NF4: More bins near 0 (optimal for normal distribution)
+NF4_BINS = [
+    -1.0, -0.6962, -0.5251, -0.3949, -0.2844, -0.1848, -0.0911, 0.0,
+    0.0911, 0.1848, 0.2844, 0.3949, 0.5251, 0.6962, 1.0, inf
+]
+```
+
+**QLoRA Technical Components:**
+1. **4-bit NormalFloat (NF4)** - Information-theoretically optimal for normally distributed weights
+2. **Double Quantization** - Quantize the quantization constants (further memory reduction)
+3. **Paged Optimizers** - Use CPU memory when GPU runs out
+
+**Implementation:**
+```python
+from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+import torch
+
+# Configure 4-bit quantization
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True
+)
+
+# Load model in 4-bit
+model = AutoModelForCausalLM.from_pretrained(
+    "meta-llama/Llama-2-7b-hf",
+    quantization_config=bnb_config,
+    device_map="auto"
+)
+
+# Prepare for k-bit training
+model = prepare_model_for_kbit_training(model)
+
+# Configure LoRA
+lora_config = LoraConfig(
+    r=64,  # Higher rank for 4-bit (compensate precision loss)
+    lora_alpha=16,
+    target_modules=["q_proj", "v_proj", "k_proj", "o_proj"],
+    lora_dropout=0.05,
+    task_type="CAUSAL_LM"
+)
+
+# Apply LoRA
+model = get_peft_model(model, lora_config)
+print(model.print_trainable_parameters())
+
+# Train
+trainer = Trainer(model=model, args=training_args, train_dataset=dataset)
+trainer.train()
+
+# Save adapters only
+model.save_pretrained("./qlora_adapters")
+```
+
+**Quality Comparison:**
+```python
+# Benchmarks on LLaMA-65B:
+# Full Fine-tuning (FP16):    100% quality (baseline)
+# LoRA (FP16):                 99.3% quality
+# QLoRA (4-bit):               99.0% quality
+# 1% quality difference is negligible for most tasks
+```
+
+**Memory Breakdown (LLaMA-65B):**
+```python
+# QLoRA training:
+# 1. Base model (4-bit):       ~33 GB
+# 2. LoRA adapters (FP16):     ~100 MB
+# 3. Gradients (LoRA only):    ~100 MB
+# 4. Optimizer states:         ~400 MB
+# 5. Activations:              ~2 GB
+# Total:                       ~36 GB (fits on A6000!)
+
+# vs Full fine-tuning:
+# Total:                       520 GB (requires 8× A100!)
+```
+
+**Interview Tip:** QLoRA democratizes LLM fine-tuning by enabling 65B+ model training on single consumer GPUs. Combines 4-bit NF4 quantization (3× compression) with LoRA, achieving 99% of full fine-tuning quality at 1/10th the memory.
+
+---
+
 ### 123. What are PEFT methods? List 4 common ones.
+
+**PEFT (Parameter-Efficient Fine-Tuning)** methods fine-tune large models by updating only a small subset of parameters.
+
+**Why PEFT is Important:**
+- Full fine-tuning LLMs is expensive ($1000s, multi-GPU)
+- PEFT achieves 95-99% quality with 0.1-1% trainable params
+- Multiple task-specific adapters can share same base model
+
+**4 Common PEFT Methods:**
+
+### **1. LoRA (Low-Rank Adaptation)**
+
+Inject trainable low-rank matrices into attention layers:
+$$W' = W_0 + BA$$
+
+```python
+from peft import LoraConfig, get_peft_model
+
+lora_config = LoraConfig(
+    r=16,  # Rank
+    lora_alpha=32,
+    target_modules=["q_proj", "v_proj"],
+    task_type="CAUSAL_LM"
+)
+model = get_peft_model(base_model, lora_config)
+```
+**Trainable:** 0.1-1% | **Quality:** 99% | **Most Popular**
+
+---
+
+### **2. Prefix Tuning**
+
+Prepend trainable "prefix" vectors to each layer's input:
+
+```python
+from peft import PrefixTuningConfig
+
+prefix_config = PrefixTuningConfig(
+    task_type="CAUSAL_LM",
+    num_virtual_tokens=30,  # Prefix length
+    encoder_hidden_size=768
+)
+model = get_peft_model(base_model, prefix_config)
+```
+**Trainable:** 0.01-0.1% | **Quality:** 95-98% | **Extremely efficient**
+
+---
+
+### **3. Adapters**
+
+Insert small bottleneck layers between transformer layers:
+
+```python
+class AdapterLayer(nn.Module):
+    def __init__(self, d_model, bottleneck_dim=64):
+        super().__init__()
+        self.down_proj = nn.Linear(d_model, bottleneck_dim)
+        self.up_proj = nn.Linear(bottleneck_dim, d_model)
+        self.activation = nn.ReLU()
+    
+    def forward(self, x):
+        residual = x
+        x = self.down_proj(x)
+        x = self.activation(x)
+        x = self.up_proj(x)
+        return x + residual
+
+from peft import AdapterConfig
+adapter_config = AdapterConfig(adapter_dim=64)
+model = get_peft_model(base_model, adapter_config)
+```
+**Trainable:** 1-3% | **Quality:** 98% | **More expressive**
+
+---
+
+### **4. Prompt Tuning (Soft Prompts)**
+
+Learn continuous prompt embeddings prepended to input:
+
+```python
+from peft import PromptTuningConfig
+
+prompt_config = PromptTuningConfig(
+    task_type="CAUSAL_LM",
+    num_virtual_tokens=20,  # Learned prompt length
+    prompt_tuning_init="TEXT",
+    prompt_tuning_init_text="Summarize: "
+)
+model = get_peft_model(base_model, prompt_config)
+```
+**Trainable:** <0.01% | **Quality:** 90-95% | **Works best on large models (>10B)**
+
+---
+
+**Comparison Table:**
+
+| **Method** | **Trainable %** | **Quality** | **Storage (per task)** | **Best For** |
+|------------|----------------|-------------|----------------------|-------------|
+| **LoRA** | 0.1-1% | 99% | 10-100 MB | General purpose (BEST) |
+| **Prefix Tuning** | 0.01-0.1% | 95-98% | 1-10 MB | Many tasks, small storage |
+| **Adapters** | 1-3% | 98% | 50-200 MB | High expressiveness |
+| **Prompt Tuning** | <0.01% | 90-95% | <1 MB | Large models (>10B) |
+
+**Multi-Task Example:**
+```python
+# Base model (load once): 14 GB
+base_model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+# Train task-specific adapters
+# Task 1: Summarization (20 MB)
+# Task 2: Code generation (20 MB)
+# Task 3: Translation (20 MB)
+
+# At inference: Swap adapters
+from peft import PeftModel
+model = PeftModel.from_pretrained(base_model, "./adapters/summary")
+
+# Total: 14 GB + 60 MB (3 adapters) vs 42 GB (3 full models)
+```
+
+**Interview Tip:** **LoRA is the gold standard** for PEFT (best quality-efficiency trade-off). Use Prefix/Prompt Tuning when you need 100+ task-specific adapters. QLoRA = LoRA + 4-bit quantization for extreme memory efficiency.
+
+---
+
 ### 124. How do you prevent hallucinations in LLMs?
+
+**Hallucinations** occur when LLMs generate plausible-sounding but factually incorrect information.
+
+**Prevention Strategies:**
+
+### **1. Retrieval-Augmented Generation (RAG)**
+
+Ground responses in verified external knowledge:
+
+```python
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+
+# Create knowledge base
+embeddings = HuggingFaceEmbeddings()
+vectorstore = FAISS.from_documents(documents, embeddings)
+
+# RAG pipeline
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=retriever,
+    return_source_documents=True
+)
+
+result = qa_chain("What is the capital of France?")
+print(result['result'])  # Answer
+print(result['source_documents'])  # Evidence
+```
+
+---
+
+### **2. Prompt Engineering**
+
+Use structured prompts that encourage factual responses:
+
+```python
+# Bad prompt (encourages hallucination)
+prompt = "Tell me about the XYZ-2000 processor."
+
+# Good prompt (encourages honesty)
+prompt = """Answer based only on information you're certain about.
+If you don't know, say "I don't know".
+
+Question: Tell me about the XYZ-2000 processor.
+
+Important: Do not make up information."""
+```
+
+---
+
+### **3. Fine-tuning with RLHF / DPO**
+
+Train model to prefer factual responses:
+
+```python
+from trl import PPOTrainer, RewardTrainer
+
+# Step 1: Train reward model on human preferences
+# Factual response > Hallucinated response
+
+# Step 2: Optimize LLM with PPO
+ppo_trainer = PPOTrainer(
+    model=model,
+    reward_model=reward_model
+)
+```
+
+---
+
+### **4. Confidence Scoring**
+
+Detect low-confidence responses:
+
+```python
+def compute_confidence(logits):
+    probs = torch.softmax(logits, dim=-1)
+    confidence = probs.max(dim=-1).values.mean()
+    return confidence.item()
+
+def generate_with_threshold(model, prompt, min_confidence=0.7):
+    output = model.generate(prompt, output_scores=True, return_dict_in_generate=True)
+    confidence = compute_confidence(torch.stack(output.scores))
+    
+    if confidence < min_confidence:
+        return "I'm not confident enough to answer.", confidence
+    
+    return tokenizer.decode(output.sequences[0]), confidence
+```
+
+---
+
+### **5. Constrained Decoding**
+
+Force generation to follow specific patterns:
+
+```python
+# Force valid JSON output
+from outlines import models, generate
+
+model = models.transformers("mistralai/Mistral-7B-v0.1")
+schema = '{"name": str, "age": int}'
+generator = generate.json(model, schema)
+output = generator("Generate a person:")  # Guaranteed valid JSON
+```
+
+---
+
+### **6. Multi-Source Verification**
+
+Cross-check facts across sources:
+
+```python
+def verify_with_multiple_sources(question, llm, sources):
+    answers = [llm.generate(f"Based on {source}, answer: {question}") 
+               for source in sources]
+    
+    from collections import Counter
+    most_common = Counter(answers).most_common(1)[0]
+    
+    if most_common[1] < len(sources) // 2:
+        return "Sources disagree. Not confident."
+    
+    return most_common[0]
+```
+
+---
+
+### **7. System Prompts for Chat Models**
+
+```python
+system_prompt = """You are a helpful assistant. Guidelines:
+1. Only provide information you're certain about
+2. If unsure, explicitly state uncertainty
+3. Cite sources when possible
+4. Do not make up facts, dates, or statistics
+5. Acknowledge limitations on recent events"""
+
+messages = [
+    {"role": "system", "content": system_prompt},
+    {"role": "user", "content": "What is the population of Mars colonies in 2024?"}
+]
+
+# Expected: "There are no Mars colonies as of 2024."
+```
+
+---
+
+**Evaluation Metrics:**
+
+```python
+# 1. Factual Consistency (NLI-based)
+from transformers import pipeline
+nli = pipeline("text-classification", model="roberta-large-mnli")
+
+def check_factual_accuracy(response, ground_truth):
+    result = nli(f"{ground_truth} [SEP] {response}")
+    return result[0]['label'] == 'ENTAILMENT'
+
+# 2. Self-Consistency
+def check_self_consistency(model, question, n=5):
+    answers = [model.generate(question) for _ in range(n)]
+    # Check if answers are similar
+    return calculate_similarity(answers)
+```
+
+**Best Practices:**
+1. **Use RAG** for factual domains (customer support, Q&A)
+2. **Fine-tune with RLHF** for general reliability
+3. **Prompt engineering** to encourage honesty
+4. **Confidence thresholds** to catch low-quality outputs
+5. **Cite sources** when possible (transparency)
+
+**Interview Tip:** Hallucinations are a fundamental LLM limitation. Best mitigation is **RAG** (grounding in verified sources) + **RLHF** (training for factuality) + **prompt engineering** (encouraging honesty). Always use multiple strategies for critical applications.
+
+---
+
 ### 125. What is supervised fine-tuning (SFT)? How is it different from RLHF?
+
+**SFT** and **RLHF** are two stages in aligning LLMs to follow instructions and human preferences.
+
+| **Aspect** | **SFT** | **RLHF** |
+|------------|---------|----------|
+| **Goal** | Teach instruction following | Align with preferences/values |
+| **Training Data** | (Instruction, Response) pairs | Preference comparisons (A > B) |
+| **Method** | Supervised learning | Reinforcement learning |
+| **Complexity** | Simple | Complex (reward model + RL) |
+| **Order** | Stage 1 (after pre-training) | Stage 2 (after SFT) |
+| **Output** | Good instruction following | Better: helpful, harmless, honest |
+
+---
+
+### **Supervised Fine-Tuning (SFT)**
+
+**Purpose:** Adapt pre-trained LLM to follow instructions.
+
+**Training Data:**
+```python
+examples = [
+    {
+        "instruction": "Translate to French: Hello world",
+        "response": "Bonjour le monde"
+    },
+    {
+        "instruction": "Write a Python function to calculate factorial",
+        "response": "def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n-1)"
+    }
+]
+```
+
+**Training:**
+```python
+from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
+
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+# Format data
+def format_instruction(example):
+    return {
+        "text": f"### Instruction:\n{example['instruction']}\n\n### Response:\n{example['response']}"
+    }
+
+dataset = dataset.map(format_instruction)
+
+# Standard supervised training
+trainer = Trainer(
+    model=model,
+    args=TrainingArguments(output_dir="./sft_model", num_train_epochs=3),
+    train_dataset=dataset
+)
+trainer.train()
+```
+
+**Popular SFT Datasets:**
+- **Alpaca**: 52K instruction-following examples
+- **Dolly**: 15K instruction-response pairs
+- **FLAN**: Multi-task instructions (1000+ tasks)
+
+---
+
+### **RLHF (Reinforcement Learning from Human Feedback)**
+
+**Purpose:** Further align model with human preferences (helpfulness, harmlessness, honesty).
+
+**Why SFT isn't enough:**
+- SFT learns to mimic dataset responses
+- Doesn't capture nuanced preferences
+- Can't optimize for multiple objectives simultaneously
+
+**Three-Stage Process:**
+
+**Stage 1: Train Reward Model**
+
+Collect preference data:
+```python
+prompt = "Write a poem about nature"
+
+response_A = "The trees sway gently..."  # Good
+response_B = "Trees r cool lol"          # Bad
+
+# Human labels: A > B
+
+preferences = [
+    {"prompt": prompt, "chosen": response_A, "rejected": response_B},
+    ...
+]
+```
+
+Train reward model:
+```python
+from trl import RewardTrainer
+
+reward_model = AutoModelForSequenceClassification.from_pretrained(
+    "meta-llama/Llama-2-7b-hf",
+    num_labels=1  # Scalar reward
+)
+
+reward_trainer = RewardTrainer(
+    model=reward_model,
+    train_dataset=preference_dataset
+)
+reward_trainer.train()
+```
+
+**Stage 2: RL Optimization (PPO)**
+
+```python
+from trl import PPOTrainer, PPOConfig
+
+model = AutoModelForCausalLMWithValueHead.from_pretrained("sft_model")
+
+ppo_trainer = PPOTrainer(
+    model=model,
+    config=PPOConfig(batch_size=32, learning_rate=1.4e-5)
+)
+
+for batch in dataloader:
+    prompts = batch['prompt']
+    
+    # Generate responses
+    responses = model.generate(prompts)
+    
+    # Get rewards
+    rewards = reward_model(prompts, responses)
+    
+    # PPO update
+    stats = ppo_trainer.step(prompts, responses, rewards)
+```
+
+**Objective:**
+$$\mathcal{L}_{RLHF} = \mathbb{E}[r_\theta(x, y)] - \beta \cdot D_{KL}[\pi_\theta(y|x) \| \pi_{ref}(y|x)]$$
+
+- Maximize reward while staying close to SFT model
+
+---
+
+**Comparison Example:**
+
+```python
+prompt = "How do I make a bomb?"
+
+# SFT model (just mimics training data)
+sft_response = "To make a bomb, you need..."  # Unsafe!
+
+# RLHF model (aligned for safety)
+rlhf_response = "I cannot provide instructions for making explosive devices. This is dangerous and illegal."
+```
+
+---
+
+**Modern Alternative: DPO (Direct Preference Optimization)**
+
+Simpler than RLHF (no reward model or RL):
+
+```python
+from trl import DPOTrainer
+
+dpo_trainer = DPOTrainer(
+    model=sft_model,
+    ref_model=sft_model,  # Reference (frozen SFT)
+    train_dataset=preference_dataset,
+    beta=0.1  # KL penalty
+)
+dpo_trainer.train()
+```
+
+**Benefits:** No reward model, more stable, comparable results to RLHF.
+
+---
+
+**Full Pipeline:**
+
+```
+Pre-trained LLM (GPT, LLaMA)
+       ↓
+Supervised Fine-Tuning (SFT)
+- Train on instruction-response pairs
+- Goal: Follow instructions
+       ↓
+Collect Preferences
+- Humans rank responses
+       ↓
+RLHF / DPO
+- Align with human preferences
+- Goal: Helpful, harmless, honest
+       ↓
+Deployed Model (ChatGPT, Claude)
+```
+
+**Interview Tip:** **SFT** teaches the model *what* to do (follow instructions), while **RLHF** teaches *how* to do it well (according to human preferences). Modern trend is **DPO** because it's simpler and more stable while achieving similar results.
+
+---
 ### 126. What is RLHF? Explain reward modeling, training, preference data.
+
+**RLHF (Reinforcement Learning from Human Feedback)** aligns LLMs with human preferences through three stages.
+
+---
+
+### **Stage 1: Supervised Fine-Tuning (SFT)**
+
+First, create instruction-following model:
+
+```python
+from transformers import AutoModelForCausalLM, Trainer
+
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+
+# Train on (prompt, response) pairs
+trainer =Trainer(model=model, train_dataset=instruction_dataset)
+trainer.train()
+model.save_pretrained("./sft_model")
+```
+
+---
+
+### **Stage 2: Reward Model Training**
+
+**2.1 Collect Preference Data:**
+
+For each prompt, generate multiple responses and have humans rank them:
+
+```python
+# Human labelers see:
+prompt = "Write a poem about the ocean"
+
+response_A = "The ocean waves crash gently on the shore,\nA symphony of nature..."  → Score: 9/10
+response_B = "Ocean is big and blue"  → Score: 3/10
+response_C = "Water everywhere..."  → Score: 5/10
+
+# Result: Preference pairs
+preferences = [
+    {"prompt": prompt, "chosen": response_A, "rejected": response_B},
+    {"prompt": prompt, "chosen": response_A, "rejected": response_C},
+    {"prompt": prompt, "chosen": response_C, "rejected": response_B}
+]
+```
+
+**2.2 Train Reward Model:**
+
+Reward model learns to predict human preferences:
+
+```python
+from transformers import AutoModelForSequenceClassification
+from trl import RewardTrainer, RewardConfig
+import torch
+
+# Initialize reward model (same architecture as SFT model)
+reward_model = AutoModelForSequenceClassification.from_pretrained(
+    "./sft_model",
+    num_labels=1  # Scalar reward score
+)
+
+# Loss function: Bradley-Terry model
+def reward_loss(r_chosen, r_rejected):
+    """
+    Maximize probability that r_chosen > r_rejected
+    Loss = -log(sigmoid(r_chosen - r_rejected))
+    """
+    return -torch.log(torch.sigmoid(r_chosen - r_rejected)).mean()
+
+# Train reward model
+reward_trainer = RewardTrainer(
+    model=reward_model,
+    args=RewardConfig(output_dir="./reward_model"),
+    train_dataset=preference_dataset
+)
+reward_trainer.train()
+```
+
+**Reward Model Objective:**
+$$\mathcal{L}_{RM} = -\mathbb{E}_{(x, y_w, y_l)} [\log(\sigma(r_\theta(x, y_w) - r_\theta(x, y_l)))]$$
+
+Where:
+- $y_w$: Preferred ("chosen") response
+- $y_l$: Rejected response
+- $r_\theta$: Reward model
+- Maximizes gap between chosen and rejected rewards
+
+---
+
+### **Stage 3: RL Fine-tuning with PPO**
+
+**3.1 Setup:**
+
+```python
+from trl import PPOTrainer, PPOConfig, AutoModelForCausalLMWithValueHead
+
+# Load SFT model with value head (for PPO)
+model = AutoModelForCausalLMWithValueHead.from_pretrained("./sft_model")
+ref_model = AutoModelForCausalLMWithValueHead.from_pretrained("./sft_model")
+ref_model.eval()  # Frozen reference
+
+# Load trained reward model
+reward_model = AutoModelForSequenceClassification.from_pretrained("./reward_model")
+reward_model.eval()
+
+# PPO configuration
+ppo_config = PPOConfig(
+    model_name="llama-2-7b-rlhf",
+    learning_rate=1.4e-5,
+    batch_size=16,
+    mini_batch_size=4,
+    gradient_accumulation_steps=4,
+    ppo_epochs=4,
+    init_kl_coef=0.2  # KL penalty coefficient
+)
+
+ppo_trainer = PPOTrainer(
+    config=ppo_config,
+    model=model,
+    ref_model=ref_model,
+    tokenizer=tokenizer
+)
+```
+
+**3.2 Training Loop:**
+
+```python
+for epoch in range(num_epochs):
+    for batch in dataloader:
+        prompts = batch['prompt']
+        
+        # 1. Generate responses
+        query_tensors = [tokenizer.encode(p, return_tensors="pt") for p in prompts]
+        response_tensors = ppo_trainer.generate(query_tensors, max_length=256)
+        
+        # Decode responses
+        responses = [tokenizer.decode(r, skip_special_tokens=True) 
+                     for r in response_tensors]
+        
+        # 2. Compute rewards
+        reward_inputs = tokenizer(
+            [f"{p} {r}" for p, r in zip(prompts, responses)],
+            return_tensors="pt",
+            padding=True
+        )
+        with torch.no_grad():
+            rewards = reward_model(**reward_inputs).logits.squeeze(-1)
+        
+        # 3. PPO update
+        stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+        
+        print(f"Mean reward: {rewards.mean():.3f}")
+```
+
+**3.3 PPO Objective:**
+
+$$\mathcal{L}_{PPO} = \mathbb{E}[r_\theta(x, y)] - \beta \cdot D_{KL}[\pi_\theta(y|x) \| \pi_{ref}(y|x)]$$
+
+Where:
+- $r_\theta(x, y)$: Reward from reward model
+- $\beta$: KL penalty coefficient (prevent model from deviating too much from SFT)
+- $\pi_\theta$: Policy being optimized
+- $\pi_{ref}$: Reference policy (frozen SFT model)
+
+**Why KL Penalty?** Prevents reward hacking (model exploiting reward model weaknesses).
+
+---
+
+### **Full Pipeline Visualization:**
+
+```
+Step 1: SFT
+  Input:  Pre-trained LLM + Instruction dataset
+  Output: Instruction-following model
+  
+Step 2: Collect Preferences
+  Input:  Prompts
+  Process: Generate multiple responses → humans rank
+  Output: Preference pairs (chosen, rejected)
+  
+Step 3: Train Reward Model
+  Input:  Preference pairs
+  Output: Reward model (predicts human preferences)
+  
+Step 4: PPO Training
+  Input:  SFT model + Reward model
+  Process: Generate → Score → Optimize via PPO
+  Output: RLHF-aligned model
+```
+
+---
+
+### **Preference Data Collection:**
+
+```python
+# Real-world setup (e.g., OpenAI, Anthropic)
+from datasets import load_dataset
+
+# Example: Anthropic HH-RLHF dataset
+dataset = load_dataset("Anthropic/hh-rlhf")
+
+print(dataset['train'][0])
+# {
+#   'chosen': 'Human: What is photosynthesis?\n\nAssistant: Photosynthesis is...',
+#   'rejected': 'Human: What is photosynthesis?\n\nAssistant: Idk google it'
+# }
+```
+
+**Labeling Guidelines:**
+- **Helpful:** Answers the question accurately
+- **Harmless:** No toxic/unsafe content
+- **Honest:** Acknowledges uncertainty when appropriate
+
+---
+
+### **Modern Alternative: DPO (Direct Preference Optimization)**
+
+Skips reward modeling and RL:
+
+```python
+from trl import DPOTrainer, DPOConfig
+
+dpo_config = DPOConfig(
+    beta=0.1,  # Temperature parameter
+    learning_rate=5e-7
+)
+
+dpo_trainer = DPOTrainer(
+    model=sft_model,
+    ref_model=sft_model,  # Frozen copy
+    train_dataset=preference_dataset,
+    args=dpo_config
+)
+dpo_trainer.train()
+```
+
+**DPO Objective:**
+$$\mathcal{L}_{DPO} = -\mathbb{E}\left[\log\sigma\left(\beta \log\frac{\pi_\theta(y_w|x)}{\pi_{ref}(y_w|x)} - \beta \log\frac{\pi_\theta(y_l|x)}{\pi_{ref}(y_l|x)}\right)\right]$$
+
+**Benefits:** Simpler, more stable, no reward model needed.
+
+**Interview Tip:** RLHF has 3 stages: (1) SFT for instruction following, (2) Reward model trained on human preferences, (3) PPO optimization to maximize rewards while staying close to SFT. Modern alternatives like **DPO** achieve similar result with simpler training (no RL required).
+
+---
 ### 127. What are guardrails in LLM-based systems?
+
+**Guardrails** are safety mechanisms preventing harmful/inappropriate LLM outputs.
+
+**Key Risk Categories:**
+- **Harmful content** \u2192 Content filters
+- **Jailbreaking** \u2192 Input validation  
+- **PII leakage** \u2192 Output filtering
+- **Hallucinations** \u2192 RAG, citations
+- **Prompt injection** \u2192 Sandboxing
+
+**Implementation Example:**
+```python
+from guardrails import Guard
+import guardrails as gd
+
+guard = Guard.from_string(
+    validators=[
+        gd.validators.ToxicLanguage(on_fail=\"fix\"),
+        gd.validators.DetectPII(pii_entities=[\"EMAIL\", \"PHONE\"])
+    ]
+)
+
+validated = guard.validate(user_input)
+```
+
+**Interview Tip:** Multi-layered approach: input validation + output filtering + RAG + monitoring. Use frameworks like **NeMo Guardrails** or **Guardrails AI**.
+
+---
+
 ### 128. How do you evaluate LLMs? (MT-Bench, HELM, MMLU, BLEU, Rouge)
+
+**Task-Specific Metrics:**
+- **BLEU:** N-gram overlap (translation)
+- **ROUGE:** Recall overlap (summarization)  
+- **BERTScore:** Semantic similarity using embeddings
+- **Perplexity:** Language modeling quality
+
+**General Benchmarks:**
+
+| **Benchmark** | **Measures** | **Example Scores** |
+|--------------|--------------|-------------------|
+| **MMLU** | 57-task knowledge | GPT-4: 86%, GPT-3.5: 70% |
+| **MT-Bench** | Multi-turn conversation | Scored 1-10 by GPT-4 judge |
+| **HELM** | 7 metrics (accuracy, fairness, bias, toxicity) | Holistic evaluation |
+| **TruthfulQA** | Factual accuracy | Hallucination detection |
+
+**Interview Tip:** Use **task-specific metrics** (BLEU/ROUGE) in development, **benchmarks** (MMLU/HELM) for comparison, **LLM-as-judge** (MT-Bench) for production.
+
+---
+
 ### 129. What is instruction tuning?
 ### 130. Explain the concept of “chain-of-thought prompting.”
 ### 131. What is retrieval-augmented generation (RAG)?
-### 132. What vector databases are used in RAG?
-### 133. Explain chunking strategies for RAG pipelines.
-### 134. What are embedding models? How do they differ from LLMs?
-### 135. Explain how LlamaIndex or LangChain orchestrate LLM pipelines.
+
+**RAG** = Retrieving relevant documents from knowledge base + using them to generate grounded responses.
+
+**Why RAG?**
+- Reduces hallucinations (grounds in real data)
+- Up-to-date information (no retraining needed)
+- Cite-able sources
+
+**RAG Pipeline:**
+```
+1. User Query → 2. Embed Query → 3. Vector Search (retrieve top-k docs) 
+→ 4. Augment Prompt with docs → 5. LLM generates answer
+```
+
+**Implementation:**
+```python
+from langchain.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+
+# Create vector store
+vectorstore = FAISS.from_documents(documents, embeddings)
+
+# RAG chain
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
+    return_source_documents=True
+)
+
+result = qa_chain("What is the refund policy?")
+print(result['result'])  # Answer
+print(result['source_documents'])  # Citations
+```
+
+**Interview Tip:** RAG is the **gold standard** for reducing hallucinations. Retrieve → Augment → Generate.
 
 ---
+
+### 132. What vector databases are used in RAG?
+
+**Vector DBs** store embeddings and enable fast similarity search.
+
+**Popular Options:**
+
+| **Database** | **Type** | **Best For** | **Scalability** |
+|-------------|---------|--------------|----------------|
+| **FAISS** | Library | Local, fast prototyping | Single machine |
+| **Pinecone** | Cloud | Production, managed | Billions of vectors |
+| **Weaviate** | Open-source | Hybrid search | Self-hosted/cloud |
+| **Chroma** | Embedded | Simple apps | Small-medium |
+| **Qdrant** | Open-source | High performance | Self-hosted |
+| **Milvus** | Open-source | Enterprise | Distributed |
+
+**Example (FAISS):**
+```python
+import faiss
+import numpy as np
+
+# Create index
+d = 768  # embedding dimension
+index = faiss.IndexFlatL2(d)
+
+# Add vectors
+vectors = np.random.rand(1000, d).astype('float32')
+index.add(vectors)
+
+# Search
+query = np.random.rand(1, d).astype('float32')
+distances, indices = index.search(query, k=5)  # Top 5 similar
+```
+
+**Interview Tip:** **FAISS** for prototyping, **Pinecone/Weaviate** for production. Vector DBs enable fast semantic search via cosine/L2 similarity.
+
+---
+
+### 133. Explain chunking strategies for RAG pipelines.
+
+**Chunking** = Breaking documents into smaller pieces for embedding and retrieval.
+
+**Why Chunk?**
+- Embedding models have token limits (512-8192)
+- Smaller chunks = more precise retrieval
+- Balance: too small → loss of context, too large → noisy retrieval
+
+**Strategies:**
+
+**1. Fixed-Size Chunking** (Simple)
+```python
+from langchain.text_splitter import CharacterTextSplitter
+
+splitter = CharacterTextSplitter(
+    chunk_size=1000,  # characters
+    chunk_overlap=200  # overlap between chunks
+)
+chunks = splitter.split_text(document)
+```
+
+**2. Semantic Chunking** (Better)
+```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200,
+    separators=["\n\n", "\n", ". ", " ", ""]  # Split on paragraph/sentence
+)
+chunks = splitter.split_text(document)
+```
+
+**3. Document-Aware Chunking** (Best)
+- **Markdown:** Split by headers (##, ###)
+- **Code:** Split by function/class
+- **PDF:** Split by page/section
+
+**Best Practices:**
+- **Chunk size:** 500-1000 tokens (balance precision/context)
+- **Overlap:** 10-20% (preserve context across boundaries)
+- **Metadata:** Store source, page number, timestamp
+
+**Interview Tip:** Start with **RecursiveCharacterTextSplitter** (500-1000 tokens, 10-20% overlap). Adjust based on retrieval quality.
+
+---
+
+### 134. What are embedding models? How do they differ from LLMs?
+
+**Embedding Models** = Convert text → dense vector representations (embeddings) for semantic search.
+
+**Key Differences:**
+
+| **Aspect** | **Embedding Models** | **LLMs** |
+|------------|---------------------|----------|
+| **Purpose** | Semantic similarity | Text generation |
+| **Output** | Vector (e.g., [0.2, -0.5, ...]) | Text tokens |
+| **Size** | Small (100M-400M params) | Large (7B-175B params) |
+| **Speed** | Fast (ms) | Slow (seconds) |
+| **Use Case** | Search, clustering, RAG | Chat, generation, reasoning |
+| **Examples** | BERT, Sentence-BERT, E5 | GPT-4, LLaMA, Claude |
+
+**Popular Embedding Models:**
+- **sentence-transformers/all-MiniLM-L6-v2:** Fast, 384-dim
+- **sentence-transformers/all-mpnet-base-v2:** Balanced, 768-dim
+- **OpenAI text-embedding-ada-002:** State-of-the-art, 1536-dim
+- **BAAI/bge-large-en-v1.5:** Open-source SOTA
+
+**Usage:**
+```python
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Embed documents
+docs = ["Python is great", "I love Python programming"]
+embeddings = model.encode(docs)
+
+# Compute similarity
+from sklearn.metrics.pairwise import cosine_similarity
+similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+print(f"Similarity: {similarity:.3f}")  # ~0.85 (high semantic similarity)
+```
+
+**Interview Tip:** **Embedding models** power RAG retrieval (semantic search). **LLMs** generate responses. Use embeddings for fast similarity, LLMs for generation.
+
+---
+
+### 135. Explain how LlamaIndex or LangChain orchestrate LLM pipelines.
+
+**LangChain & LlamaIndex** = Frameworks for building LLM applications (RAG, agents, chains).
+
+---
+
+### **LangChain** (Most Popular)
+
+**Core Concepts:**
+
+**1. Chains** - Sequential LLM operations
+```python
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain.llms import OpenAI
+
+prompt = PromptTemplate(input_variables=[\"topic\"], template=\"Write about {topic}\")\nchain = LLMChain(llm=OpenAI(), prompt=prompt)
+result = chain.run(\"AI safety\")
+```
+
+**2. Agents** - LLMs that use tools
+```python
+from langchain.agents import initialize_agent, Tool
+from langchain.tools import WikipediaQueryRun
+
+tools = [
+    Tool(name=\"Wikipedia\", func=WikipediaQueryRun(), description=\"Search Wikipedia\")
+]
+
+agent = initialize_agent(tools, llm, agent=\"zero-shot-react-description\")
+agent.run(\"What is the population of Tokyo?\")
+# Agent decides: Use Wikipedia tool \u2192 Extract answer
+```
+
+**3. Memory** - Conversation history
+```python
+from langchain.memory import ConversationBufferMemory
+
+memory = ConversationBufferMemory()
+chain = LLMChain(llm=llm, prompt=prompt, memory=memory)
+
+chain.run(\"My name is Alice\")
+chain.run(\"What's my name?\")  # Remembers \"Alice\"
+```
+
+**4. RAG Pipeline**
+```python
+from langchain.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+
+vectorstore = FAISS.from_documents(docs, embeddings)
+qa = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever()
+)
+qa.run(\"What is RAG?\")
+```
+
+---
+
+### **LlamaIndex** (Specialized for RAG)
+
+**Core Concepts:**
+
+**1. Index** - Structured data storage
+```python
+from llama_index import VectorStoreIndex, SimpleDirectoryReader
+
+# Load documents
+documents = SimpleDirectoryReader('./data').load_data()
+
+# Create index
+index = VectorStoreIndex.from_documents(documents)
+
+# Query
+query_engine = index.as_query_engine()
+response = query_engine.query(\"What is the main topic?\")
+print(response)
+```
+
+**2. Query Engines** - Different retrieval strategies
+```python
+# Simple retrieval
+query_engine = index.as_query_engine()
+
+# Tree summarization
+from llama_index.query_engine import TreeSummarize
+query_engine = index.as_query_engine(response_mode=\"tree_summarize\")
+
+# With citations
+query_engine = index.as_query_engine(response_mode=\"compact\", return_source=True)
+```
+
+**3. Data Connectors** - Load from various sources
+```python
+from llama_index.readers import PDFReader, NotionReader, SlackReader
+
+pdf_docs = PDFReader().load_data(file=Path('./doc.pdf'))
+notion_docs = NotionReader(token=NOTION_TOKEN).load_data()
+```
+
+---
+
+### **Comparison:**
+
+| **Aspect** | **LangChain** | **LlamaIndex** |\n|------------|---------------|----------------|\n| **Focus** | General LLM orchestration | RAG & indexing |\n| **Best For** | Agents, chains, tools | Document Q&A, search |\n| **Complexity** | More flexible | Simpler for RAG |\n| **Use Case** | Multi-step workflows | Knowledge base search |\n\n**Typical Stack:**\n```\nApplication\n    \u2193\nLangChain (orchestration, agents)\n    \u2193  \nLlamaIndex (document indexing)\n    \u2193\nVector DB (FAISS, Pinecone)\n    \u2193\nLLM (GPT-4, LLaMA)\n```\n\n**Interview Tip:** **LangChain** = Swiss Army knife (agents, chains, tools). **LlamaIndex** = RAG specialist (indexing, retrieval). Often used together: LangChain for orchestration, LlamaIndex for document handling.\n\n---
 
 
 ---
