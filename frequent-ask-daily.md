@@ -1,124 +1,242 @@
-GenAI & model fundamentals
+# Frequent GenAI Interview Q&A (Simple + Interview-Friendly)
 
-Difference between discriminative vs generative models
+Last updated: 14 Feb 2026
 
-High-level idea of GANs, VAEs, diffusion models (what problem they solve, not the math)
+Goal: answers you can say **clearly** in interviews.
 
-What a Transformer is, what attention does, why it beat RNNs
+How to use this sheet:
+- First say the **Say it like this (45–60s)** part.
+- If they ask deeper, add the **Example** and **Details (optional)**.
 
-LLMs in practice
+## What interviewers usually want
 
-Prompt basics: temperature / top-k / top-p, few-shot vs zero-shot
+- You understand the basics (Transformer, RAG, embeddings).
+- You can design a real system (reliable, secure, monitored).
+- You can explain trade-offs (cost vs quality, speed vs accuracy).
+- You think about risk (hallucinations, PII, bias).
 
-RAG basics: embeddings, vector DBs, chunking, why you’d use RAG instead of fine-tuning
+## Fundamentals (simple refresh)
 
-How you’d evaluate outputs: hallucinations, accuracy vs diversity, human eval, etc.
+### Discriminative vs Generative (simple)
 
-Python & systems
+**Say it like this (45s)**: Discriminative models are like “judge models” — they take an input and pick a label/score (spam vs not spam). Generative models are like “writer models” — they learn to produce new content (text, images). In real LLM apps we often use both: a retriever/ranker to find the right info, and a generator to write the final answer.
 
-Calling models via API / SDK, handling retries, timeouts, logging
+**Example**: Spam classifier = discriminative. ChatGPT writing an email = generative.
 
-Rough idea of tools like LangChain / LlamaIndex (pipelines, chains, agents)
+**Details (optional)**
+- Discriminative: classification/regression.
+- Generative: create text/images/audio; can follow instructions.
 
-Cost vs quality trade-offs: when a small open-source model is “good enough” vs GPT-4-class
+### GANs vs VAEs vs Diffusion (no math)
 
-Risk, bias & ethics
+**Say it like this (45s)**: All three are ways to generate new data.
+- GANs are like a forger vs detective game: generator tries to fool a discriminator. Often sharp outputs, but training can be unstable.
+- VAEs learn a “compressed space” and generate from it. Training is stable, but outputs can be softer.
+- Diffusion starts from noise and slowly cleans it into an image/text representation. It’s slower, but quality and control are strong.
 
-Data privacy & PII in prompts / logs
+**Example**: Modern image generators often use diffusion because it’s reliable and high quality.
 
-Bias in training data & generated content
+### What is a Transformer? What is attention?
 
-Why hallucinations are risky in production & how to mitigate
+**Say it like this (60s)**: A Transformer is the architecture behind most LLMs. The key idea is **attention**: for each word/token, the model looks at other tokens and decides what matters most. This lets it connect information across a long text. Compared to RNNs, Transformers train much faster because they can process tokens in parallel on GPUs, which made scaling possible.
 
+**Example**: In “The trophy doesn’t fit in the suitcase because it is too big”, attention helps the model link “it” → “trophy”.
 
+## LLMs in practice (knobs + patterns)
 
+### Temperature, top-k, top-p (sampling)
 
-Expect questions that test both your technical depth and business acumen. They'll definitely probe your understanding of LLM fundamentals - think transformer architecture, attention mechanisms, prompt engineering strategies, and fine-tuning approaches like LoRA or PEFT. You should be solid on RAG systems since that's what most enterprise GenAI projects use, including vector databases, embedding models, and chunking strategies. Python-wise, be ready to discuss frameworks like LangChain or LlamaIndex, and how you'd architect production systems with proper error handling, monitoring, and cost optimization. They'll also ask about real-world trade-offs: when to use GPT-4 versus smaller models, how to handle hallucinations, data privacy concerns, and how you'd evaluate model performance beyond basic metrics.
+**Say it like this (45s)**: These are controls for how “creative” the model is.
+- Temperature: lower = more consistent and conservative; higher = more varied.
+- Top-k / top-p: limit the choices for the next token so the model doesn’t pick weird low-probability words.
 
-The consulting angle means they care just as much about your problem-solving approach as your technical chops. Expect case-style questions where you need to design a GenAI solution for a hypothetical client - maybe automating customer support or document processing - and you'll need to justify your choices around model selection, infrastructure, and ROI. Be prepared to discuss failures or challenges in past projects and what you learned, since consulting is all about adapting quickly. If you need help working through these types of situational questions or want practice articulating your thought process under pressure, I built interviews.chat to rehearse answers to these tricky GenAI interview scenarios in real-time.
+**Example**: For support answers or policy text, keep temperature low (more reliable). For marketing copy, raise it a bit.
 
+### Zero-shot vs Few-shot
 
+**Say it like this (45s)**: Zero-shot is “just instructions”. Few-shot is “instructions + a couple of examples”. Few-shot helps a lot when you need a strict format or the task is easy to misunderstand.
 
+**Example**: If you want JSON output with specific fields, show 1–2 examples.
 
-20 practical, intermediate-level interview questions on Gen AI
+### RAG vs Fine-tuning (when to use which)
 
-Devraj SarkarDevraj Sarkar
-Devraj Sarkar
-Published Mar 2, 2025
-+ Follow
-Generative AI (Gen AI) is rapidly transforming real-world projects across industries, from automating customer support to enhancing content creation and streamlining business workflows. As organizations adopt AI-powered solutions, the demand for skilled professionals who can design, implement, and optimize Gen AI systems is growing. This article covers 20 practical, intermediate-level interview questions based on real project experiences to help you understand the technical challenges and solutions in Gen AI. Whether you're preparing for interviews or improving your project skills, these insights will strengthen your understanding of modern Gen AI applications.
+**Say it like this (60s)**: If the problem is “the model doesn’t know my company’s data”, use **RAG**: retrieve relevant documents and give them to the model at answer time. If the problem is “the model’s behavior is wrong” (tone, style, classification, consistent tool usage), consider **fine-tuning**. Most enterprise apps start with RAG because it’s safer and updates quickly.
 
-1. How do you design a Gen AI solution for a customer support chatbot?
-Answer: Start by collecting FAQs, support tickets, and chat history to build a relevant dataset. Choose an LLM like GPT-3.5 or Llama-2 for natural conversations. Implement RAG (Retrieval-Augmented Generation) to pull real-time knowledge from internal databases. Fine-tune the model to align with brand tone. Deploy using APIs, manage prompts effectively with frameworks like LangChain, and integrate continuous feedback to retrain based on incorrect or incomplete responses.
+**Example**: New HR policy updates weekly → RAG. Brand tone for marketing emails → fine-tune (maybe).
 
-2. What is prompt engineering and why is it crucial in Gen AI projects?
-Answer: Prompt engineering focuses on designing effective inputs to ensure accurate, relevant outputs from LLMs. In projects, weak prompts lead to off-topic or false answers. For example, in a policy generator, a detailed prompt like "Generate an employee leave policy based on Indian labor law" improves accuracy. Proper prompt structure minimizes model confusion, reduces costs, and boosts performance without modifying the model's core parameters.
+### How to evaluate LLM outputs (simple)
 
-3. How do you handle data privacy in Gen AI solutions?
-Answer: Identify and classify sensitive information such as PII or PHI. Apply anonymization, encryption, or data masking before processing with third-party APIs. Use private deployment options for models when needed, like running Llama-2 locally. Secure interactions through access controls, audit logs, and secure API gateways to ensure that only authorized users and systems handle sensitive information during AI processing.
+**Say it like this (60s)**: I evaluate on 3 buckets: (1) correctness/grounding (is it true and supported?), (2) usefulness (does it solve the task?), and (3) production metrics (latency, cost, failure rate). I use offline test cases + human review, and then online monitoring with feedback.
 
-4. What is RAG (Retrieval-Augmented Generation) and when should you use it?
-Answer: RAG combines LLMs with dynamic data retrieval from external or internal sources to generate context-aware outputs. It's useful when models lack updated information. In practice, documents are embedded into a vector store (like FAISS or Pinecone). At query time, relevant documents are fetched and provided to the LLM, ensuring responses are grounded in up-to-date or proprietary data without full model retraining.
+**Example**: For a support bot: measure resolution rate, escalation rate, and hallucination incidents.
 
+## 20 practical interview questions (simple answers you can speak)
 
+### 1) How would you design a GenAI customer support chatbot?
 
-GenAI Training in Kolkata AI-102 and AI-900 Certification Training in Kolkata
-AI Training in Kolkata
-5. Describe how you fine-tune an LLM for domain-specific tasks.
-Answer: Collect domain-relevant datasets, clean and preprocess them. Use tools like Hugging Face Transformers and techniques like LoRA for efficient adaptation. Deploy training on GPU-backed infrastructure and validate outputs through expert review. Hyperparameters are adjusted to optimize accuracy, and models are tested against edge cases before integrating into production systems.
+**Say it like this (60–90s)**: I’d build it RAG-first. Step 1: collect and clean the knowledge base (FAQs, policies, past tickets). Step 2: chunk it, create embeddings, and store in a vector DB with metadata like product and region. Step 3: on each user question, retrieve the most relevant chunks and pass them to the LLM with instructions to answer only from that context. Step 4: add safety: if retrieval is weak, ask a clarifying question or escalate to a human. Step 5: measure outcomes and iterate.
 
-6. How do you control hallucinations in Gen AI outputs?
-Answer: Reduce hallucinations through precise prompts, limiting model creativity (temperature control), and grounding responses with RAG techniques. Fact-checking outputs post-inference and integrating human reviews in high-risk scenarios are critical. Prompt constraints, such as instructing the model to respond "only from the provided context," are also effective in reducing speculative answers.
+**Example**: “Refund policy for EU customers” → filter docs by region=EU before retrieval, then answer with the exact policy text.
 
-7. Explain embedding in Gen AI and its use in real projects.
-Answer: Embeddings transform text into numerical vectors that capture semantic meaning. In real projects, embeddings allow for similarity searches across large datasets. For example, customer queries are embedded and matched against stored document embeddings in a vector database to retrieve the most relevant context, improving the LLM's output accuracy and relevance.
+**Details (optional)**
+- Guardrails: citations, refusal when context missing, “don’t guess”.
+- Product metrics: deflection rate, CSAT, escalation rate, hallucination rate.
 
-8. How do you implement context management in chat-based Gen AI apps?
-Answer: Context is managed using techniques like sliding window context (keeping recent interactions), summarization to condense long histories, and storing session data in persistent storage systems like Redis. Frameworks like LangChain help automate context passing and ensure relevant conversation history is maintained across multiple turns.
+### 2) What is prompt engineering, and why does it matter?
 
-9. What role does LangChain play in Gen AI architectures?
-Answer: LangChain orchestrates multi-step LLM interactions by chaining together components such as document loaders, vector databases, and APIs. It streamlines complex workflows, like querying external sources, embedding documents, and formatting prompts, making the development of production-ready AI applications more manageable.
+**Say it like this (60s)**: Prompt engineering means writing instructions and context so the model behaves consistently. It matters because the same model can perform very differently depending on how you ask. Good prompts reduce hallucinations, improve formatting, and lower cost because you avoid retries.
 
-10. How do you optimize token usage in Gen AI projects?
-Answer: Design minimal, clear prompts and provide only the necessary context. Use embedding-based context retrieval to avoid passing large documents directly into the model. Set token limits and monitor usage patterns with analytics tools to identify inefficiencies and reduce unnecessary token consumption.
+**Example**: Instead of “summarize this”, use “Summarize in 5 bullets, include dates/numbers, and if info is missing say ‘Not provided’.”
 
-Recommended by LinkedIn
-The AI Paradox: Outdated Interview Processes in a GenAI World
-The AI Paradox: Outdated Interview Processes in a…
-Ajay Verma  1 year ago
-Interviewing in the era of AI
-Interviewing in the era of AI
-Laura Strudeman  1 month ago
-The Evolving Role of AI in Contact Centers: A New Approach to Hiring Customer Support Agents
-The Evolving Role of AI in Contact Centers: A New…
-Sheila Knight-Fields, MS, CCXP  1 year ago
-11. How do you evaluate LLM performance in production?
-Answer: Monitor accuracy through test cases, response times, token usage, and user feedback. For text quality, apply metrics like BLEU and ROUGE scores. Analyze conversations to detect failure patterns and apply human reviews for responses flagged as low confidence, adjusting the system based on findings.
+**Details (optional)**
+- Clear role + task + constraints + output format + 1–2 examples.
+- Add “ask clarifying questions” for ambiguous inputs.
 
-12. Explain vector databases in Gen AI workflows.
+### 3) How do you handle data privacy/PII in GenAI apps?
 
-Answer: Vector databases store and manage text embeddings, enabling similarity searches. When a user submits a query, it is embedded and matched against stored vectors, returning contextually relevant documents. This improves retrieval accuracy and provides high-quality input to the LLM during generation tasks.
+**Say it like this (60s)**: I treat prompts and logs like sensitive data. I minimize what I send to the model, detect and redact PII, and avoid storing raw user text unless necessary. I also secure secrets, encrypt data, and use strict access control and retention. If compliance requires it, I choose a private deployment instead of a public API.
 
-13. What’s the difference between fine-tuning and prompt engineering?
-Answer: Prompt engineering modifies the input text to guide the model's behavior without altering its weights. Fine-tuning changes the model itself using new training data. Prompt engineering is quick and cost-effective, whereas fine-tuning is resource-intensive but leads to permanent model adaptation for specific tasks.
+**Example**: Replace “john.doe@email.com” with “[EMAIL]” before sending to the model, and keep the mapping only inside your system.
 
-14. How do you manage model drift in Gen AI projects?
-Answer: Track output consistency over time, comparing against benchmarks. Use feedback loops to collect user ratings and examples of degraded performance. Regularly update training data and retrain models when drift is detected to maintain output quality and relevance.
+**Details (optional)**
+- Redaction before inference and before logging.
+- Tenant isolation + audit logs + retention limits.
 
-15. What is zero-shot vs few-shot learning in Gen AI?
-Answer: Zero-shot learning enables a model to perform tasks without prior examples, relying on general knowledge. Few-shot learning includes sample examples in the prompt to demonstrate task structure. Few-shot is useful when tasks are complex and benefit from pattern reinforcement.
+### 4) Explain RAG and when you would use it.
 
-16. Explain chunking in RAG pipelines.
-Answer: Chunking breaks large documents into smaller, coherent pieces suitable for embedding and retrieval. Ideal chunk sizes balance meaningful content with model token limits. Overlapping chunks ensure continuity of context between segments, improving accuracy during retrieval.
+**Say it like this (60s)**: RAG is “search + LLM”. First you store your documents as embeddings. When a user asks a question, you retrieve the most relevant pieces and give them to the LLM, so it answers based on your actual data. Use RAG when your data is private, large, or changes often, and when you want answers grounded in sources.
 
-17. How do you secure API keys in Gen AI applications?
-Answer: Store keys securely in environment variables or vault services like AWS Secrets Manager. Avoid hardcoding, enforce least-privilege access, rotate keys regularly, and audit usage to prevent unauthorized access or leaks.
+**Example**: A finance assistant that must answer from internal policy PDFs → RAG with citations.
 
-18. What’s the role of caching in Gen AI pipelines?
-Answer: Caching stores frequently accessed data like embeddings, search results, or LLM outputs, reducing processing time and API costs. Technologies like Redis or Memcached are used to serve repeated queries efficiently.
+**Details (optional)**
+- Good chunking and metadata filters often matter more than model choice.
+- Add re-ranking if retrieval quality is inconsistent.
 
-19. How do you control the tone and style of LLM outputs?
-Answer: Guide the model using explicit instructions in system prompts (e.g., "Respond in a formal tone"). Alternatively, fine-tune the model with a dataset that consistently reflects the desired tone across multiple examples.
+### 5) How do you fine-tune an LLM for a domain task?
 
-20. How do you integrate Gen AI into existing business workflows?
-Answer: Use APIs to connect LLMs with business systems like CRMs, ticketing tools, and databases. Workflow automation tools and custom backend services handle data exchange, ensuring Gen AI enhances existing processes without disrupting operations.
+**Say it like this (60–90s)**: Fine-tuning is when you teach the model a repeated pattern so it behaves consistently. I start by defining the exact target behavior and collecting high-quality examples. Then I fine-tune using efficient methods like LoRA/PEFT, evaluate on a holdout set and tricky edge cases, and finally deploy with versioning and monitoring. I only fine-tune when prompting and RAG can’t reach stable quality.
+
+**Example**: Customer support “ticket categorization + reply template” where the output format must always match a strict schema.
+
+**Details (optional)**
+- Keep training data clean and compliant; don’t include secrets.
+- Maintain regression tests so you don’t break prior behaviors.
+
+### 6) How do you reduce hallucinations?
+
+**Say it like this (60s)**: I reduce hallucinations by not asking the model to “guess”. I ground answers with RAG, set clear instructions like “answer only from provided context”, keep temperature low for factual tasks, and add validation checks. If the system can’t find strong context, it should say it doesn’t know and either ask a question or escalate.
+
+**Example**: If retrieval returns nothing relevant, the bot responds: “I don’t have that info in our docs. Which product/version are you using?”
+
+**Details (optional)**
+- Require citations/quotes.
+- Add schema validation for structured outputs.
+
+### 7) What are embeddings and how are they used?
+
+**Say it like this (60s)**: Embeddings turn text into numbers that capture meaning. If two texts mean similar things, their embeddings are close together. That lets you do semantic search: find relevant docs even when the words don’t match exactly.
+
+**Example**: User asks “How do I reset my password?” and your doc says “Change account credentials” — embeddings still match them.
+
+**Details (optional)**
+- Used in RAG retrieval, deduplication, clustering, recommendations.
+- Choose an embedding model that matches your language/domain.
+
+### 8) How do you manage context in chat applications?
+
+**Say it like this (60s)**: Because models have context limits, I don’t keep the entire chat forever. I keep the most recent turns, summarize older turns, and store important facts (like user preferences) separately so I can retrieve them when needed. This keeps answers consistent and reduces cost.
+
+**Example**: Store “user prefers concise answers” as a fact, rather than repeating 50 turns of chat.
+
+**Details (optional)**
+- Use a “facts memory” store + summary + recent window.
+- Treat user history as untrusted input (prompt injection risk).
+
+### 9) What do LangChain/LlamaIndex provide (at a high level)?
+
+**Say it like this (45–60s)**: They’re frameworks that help you build LLM apps faster. They provide connectors (read PDFs/web pages), chunking + embedding pipelines, retrieval, prompt templates, tool calling, and agent workflows. I use them to move faster, but I keep my core logic and tests separate.
+
+**Example**: Load a folder of PDFs → chunk → embed → store → query in a few lines.
+
+### 10) How do you optimize token usage and cost?
+
+**Say it like this (60s)**: Cost is mainly tokens and latency. I reduce tokens by keeping prompts tight, retrieving only the best context, summarizing long content, and setting output limits. I also cache repeated work (embeddings and retrieval results) and route simple tasks to smaller/cheaper models.
+
+**Example**: Use a small model to classify intent; call a larger model only when needed.
+
+### 11) How do you evaluate LLM quality in production?
+
+**Say it like this (60–90s)**: I start with a realistic test set based on real user questions and expected answers. Then I evaluate across quality (correct, grounded, helpful) and engineering metrics (latency, cost, errors). In production, I monitor outcomes, collect user feedback, and regularly re-run the eval suite when prompts, models, or the index changes.
+
+**Example**: Every time the KB updates or the model version changes, run a regression eval and compare scores.
+
+### 12) What is a vector database and why use one?
+
+**Say it like this (45–60s)**: A vector DB stores embeddings and lets you quickly find “most similar” text. It’s used in RAG to retrieve relevant chunks fast, even at large scale.
+
+**Example**: Search across 1M internal paragraphs in milliseconds.
+
+**Details (optional)**
+- Metadata filtering prevents cross-tenant leakage.
+- Re-ranking can improve accuracy.
+
+### 13) Prompting vs fine-tuning—how do you choose?
+
+**Say it like this (60s)**: I use a simple decision order: (1) prompt improvements, (2) add RAG if knowledge is missing, (3) fine-tune only if the behavior still isn’t consistent enough. Fine-tuning is powerful but costs more and needs maintenance.
+
+**Example**: Need latest product docs → RAG. Need the model to always return a strict structured template → fine-tune.
+
+### 14) What is model drift in GenAI systems?
+
+**Say it like this (60s)**: Drift means the system’s quality changes over time. It can happen because your documents change, user questions change, or you upgraded the model/provider. I detect drift by monitoring real traffic, keeping versioned prompts/indexes, and running the same evaluation set regularly.
+
+**Example**: After a policy update, old answers become wrong unless the RAG index is refreshed.
+
+### 15) Zero-shot vs few-shot: when does few-shot help most?
+
+**Say it like this (45–60s)**: Few-shot helps most when the model needs to follow a specific pattern: strict output format, tricky label rules, or a consistent tone. One good example often beats a long explanation.
+
+**Example**: Show one example of “good vs bad” classification for moderation.
+
+### 16) How do you choose chunk size and overlap in RAG?
+
+**Say it like this (60s)**: Chunking is splitting documents into pieces for retrieval. I choose chunk sizes that keep meaning together (often 200–800 tokens depending on docs), add a little overlap so sentences don’t get cut, and then validate by checking retrieval quality on real questions.
+
+**Example**: For policy docs, chunk by headings/sections so each chunk is a complete rule.
+
+**Details (optional)**
+- Too small: retrieval misses full context.
+- Too large: wastes tokens and pulls irrelevant content.
+
+### 17) How do you secure API keys and secrets?
+
+**Say it like this (45–60s)**: Never hardcode secrets. Use a secret manager, least privilege, rotation, and monitoring. Keep separate keys for environments and lock down who/what can use them.
+
+**Example**: Store keys in AWS Secrets Manager (or similar), inject at runtime, rotate monthly.
+
+### 18) What’s the role of caching in GenAI pipelines?
+
+**Say it like this (45–60s)**: Caching saves money and time. You can cache embeddings, retrieval results, and sometimes final answers for repeated questions. The key is correct invalidation—if docs change, caches must expire.
+
+**Example**: Cache retrieval results for “reset password” because it’s asked thousands of times.
+
+### 19) How do you control tone and writing style reliably?
+
+**Say it like this (60s)**: Start with clear instructions: tone, length, audience, and format. Add 1–2 examples and a checklist (e.g., “no jargon, 6th-grade reading level”). Then validate outputs. Fine-tune only if you need near-perfect consistency at scale.
+
+**Example**: “Write in a polite, professional tone. Max 6 bullets. No acronyms unless explained.”
+
+### 20) How do you integrate GenAI into existing workflows?
+
+**Say it like this (60–90s)**: I integrate GenAI like any other service: put it behind an API, connect it to systems like CRM/ticketing/docs, and add controls so it can’t take unsafe actions. I add approvals for high-impact steps, logging/auditing, and dashboards for cost and quality. Finally, I measure ROI with clear metrics.
+
+**Example**: Draft a ticket reply automatically, but require an agent to approve before sending.
+
+**Details (optional)**
+- Observability: trace requests end-to-end, version prompts/models, avoid logging PII.
+- Business metrics: time saved, resolution rate, error reduction.
+
+## Quick daily drill (5 minutes)
+
+- Pick 3 questions from the 20 and answer each in 45 seconds.
+- For each answer, add 1 production concern (latency/cost/privacy) and 1 mitigation.
