@@ -19,222 +19,275 @@ How to use this sheet:
 
 ### Discriminative vs Generative (simple)
 
-**Say it like this (45s)**: Discriminative models are like “judge models” — they take an input and pick a label/score (spam vs not spam). Generative models are like “writer models” — they learn to produce new content (text, images). In real LLM apps we often use both: a retriever/ranker to find the right info, and a generator to write the final answer.
+**Say it like this (45s):**
+Discriminative models classify or score input data (e.g., spam vs not spam). Generative models create new data, like text or images. In practice, both are used: discriminative for selecting or ranking, generative for producing content.
 
-**Example**: Spam classifier = discriminative. ChatGPT writing an email = generative.
+**Example:**
+Spam classifier = discriminative. ChatGPT writing an email = generative.
 
-**Details (optional)**
-- Discriminative: classification/regression.
-- Generative: create text/images/audio; can follow instructions.
+**Details (optional):**
+- Discriminative: classification, regression.
+- Generative: creates text, images, audio; follows instructions.
 
 ### GANs vs VAEs vs Diffusion (no math)
 
-**Say it like this (45s)**: All three are ways to generate new data.
-- GANs are like a forger vs detective game: generator tries to fool a discriminator. Often sharp outputs, but training can be unstable.
-- VAEs learn a “compressed space” and generate from it. Training is stable, but outputs can be softer.
-- Diffusion starts from noise and slowly cleans it into an image/text representation. It’s slower, but quality and control are strong.
+**Say it like this (45s):**
+GANs, VAEs, and Diffusion are all generative models:
+- GANs: A generator tries to fool a discriminator. Outputs are sharp, but training is tricky.
+- VAEs: Learn a compressed space and generate from it. Training is stable, but outputs may be blurry.
+- Diffusion: Start with noise and gradually refine it into data. Slower, but high quality and controllable.
 
-**Example**: Modern image generators often use diffusion because it’s reliable and high quality.
+**Example:**
+Modern image generators use diffusion for reliability and quality.
 
 ### What is a Transformer? What is attention?
 
-**Say it like this (60s)**: A Transformer is the architecture behind most LLMs. The key idea is **attention**: for each word/token, the model looks at other tokens and decides what matters most. This lets it connect information across a long text. Compared to RNNs, Transformers train much faster because they can process tokens in parallel on GPUs, which made scaling possible.
+**Say it like this (60s):**
+A Transformer is the main architecture for LLMs. Its key idea is attention: the model looks at all tokens and decides which are most important for each prediction. This allows it to understand context over long texts. Transformers are faster than RNNs because they process tokens in parallel, enabling large-scale training.
 
-**Example**: In “The trophy doesn’t fit in the suitcase because it is too big”, attention helps the model link “it” → “trophy”.
+**Example:**
+In “The trophy doesn’t fit in the suitcase because it is too big,” attention helps the model link “it” to “trophy.”
 
 ## LLMs in practice (knobs + patterns)
 
 ### Temperature, top-k, top-p (sampling)
 
-**Say it like this (45s)**: These are controls for how “creative” the model is.
-- Temperature: lower = more consistent and conservative; higher = more varied.
-- Top-k / top-p: limit the choices for the next token so the model doesn’t pick weird low-probability words.
+**Say it like this (45s):**
+These settings control how creative the model is:
+- Temperature: lower means more predictable, higher means more creative.
+- Top-k/top-p: restrict the next token choices to avoid unlikely words.
 
-**Example**: For support answers or policy text, keep temperature low (more reliable). For marketing copy, raise it a bit.
+**Example:**
+For support answers, use low temperature. For creative writing, use higher values.
 
 ### Zero-shot vs Few-shot
 
-**Say it like this (45s)**: Zero-shot is “just instructions”. Few-shot is “instructions + a couple of examples”. Few-shot helps a lot when you need a strict format or the task is easy to misunderstand.
+**Say it like this (45s):**
+Zero-shot means giving only instructions. Few-shot means giving instructions plus a few examples. Few-shot helps when you need a specific format or clarity.
 
-**Example**: If you want JSON output with specific fields, show 1–2 examples.
+**Example:**
+If you want JSON output, show 1–2 examples in your prompt.
 
 ### RAG vs Fine-tuning (when to use which)
 
-**Say it like this (60s)**: If the problem is “the model doesn’t know my company’s data”, use **RAG**: retrieve relevant documents and give them to the model at answer time. If the problem is “the model’s behavior is wrong” (tone, style, classification, consistent tool usage), consider **fine-tuning**. Most enterprise apps start with RAG because it’s safer and updates quickly.
+**Say it like this (60s):**
+Use RAG when the model needs up-to-date or private data: retrieve relevant documents and give them to the model. Use fine-tuning when you need the model to change its behavior or style. Most companies start with RAG because it’s safer and easier to update.
 
-**Example**: New HR policy updates weekly → RAG. Brand tone for marketing emails → fine-tune (maybe).
+**Example:**
+Weekly policy updates → RAG. Consistent brand tone → fine-tune.
 
 ### How to evaluate LLM outputs (simple)
 
-**Say it like this (60s)**: I evaluate on 3 buckets: (1) correctness/grounding (is it true and supported?), (2) usefulness (does it solve the task?), and (3) production metrics (latency, cost, failure rate). I use offline test cases + human review, and then online monitoring with feedback.
+**Say it like this (60s):**
+I check: (1) correctness (is it accurate?), (2) usefulness (does it solve the problem?), and (3) production metrics (speed, cost, errors). I use test cases, human review, and monitor real usage.
 
-**Example**: For a support bot: measure resolution rate, escalation rate, and hallucination incidents.
+**Example:**
+For a support bot: track resolution rate, escalations, and hallucinations.
 
 ## 20 practical interview questions (simple answers you can speak)
 
 ### 1) How would you design a GenAI customer support chatbot?
 
-**Say it like this (60–90s)**: I’d build it RAG-first. Step 1: collect and clean the knowledge base (FAQs, policies, past tickets). Step 2: chunk it, create embeddings, and store in a vector DB with metadata like product and region. Step 3: on each user question, retrieve the most relevant chunks and pass them to the LLM with instructions to answer only from that context. Step 4: add safety: if retrieval is weak, ask a clarifying question or escalate to a human. Step 5: measure outcomes and iterate.
+**Say it like this (60–90s):**
+I’d use a RAG approach: (1) Gather and clean the knowledge base (FAQs, policies, tickets). (2) Chunk and embed the data, store in a vector database with metadata. (3) For each question, retrieve relevant chunks and give them to the LLM with clear instructions. (4) Add safety: if retrieval is weak, ask clarifying questions or escalate. (5) Measure results and improve.
 
-**Example**: “Refund policy for EU customers” → filter docs by region=EU before retrieval, then answer with the exact policy text.
+**Example:**
+For “Refund policy for EU customers,” filter docs by region=EU, then answer with the exact policy.
 
-**Details (optional)**
-- Guardrails: citations, refusal when context missing, “don’t guess”.
-- Product metrics: deflection rate, CSAT, escalation rate, hallucination rate.
+**Details (optional):**
+- Guardrails: require citations, refuse if context is missing, avoid guessing.
+- Metrics: deflection rate, CSAT, escalation, hallucination rate.
 
 ### 2) What is prompt engineering, and why does it matter?
 
-**Say it like this (60s)**: Prompt engineering means writing instructions and context so the model behaves consistently. It matters because the same model can perform very differently depending on how you ask. Good prompts reduce hallucinations, improve formatting, and lower cost because you avoid retries.
+**Say it like this (60s):**
+Prompt engineering is writing clear instructions and context so the model gives consistent, useful answers. It matters because prompt wording can change results a lot. Good prompts reduce errors and cost.
 
-**Example**: Instead of “summarize this”, use “Summarize in 5 bullets, include dates/numbers, and if info is missing say ‘Not provided’.”
+**Example:**
+Instead of “summarize this,” say “Summarize in 5 bullets, include dates/numbers, and say ‘Not provided’ if info is missing.”
 
-**Details (optional)**
-- Clear role + task + constraints + output format + 1–2 examples.
-- Add “ask clarifying questions” for ambiguous inputs.
+**Details (optional):**
+- Specify role, task, constraints, output format, and give examples.
+- Ask for clarifying questions if input is unclear.
 
 ### 3) How do you handle data privacy/PII in GenAI apps?
 
-**Say it like this (60s)**: I treat prompts and logs like sensitive data. I minimize what I send to the model, detect and redact PII, and avoid storing raw user text unless necessary. I also secure secrets, encrypt data, and use strict access control and retention. If compliance requires it, I choose a private deployment instead of a public API.
+**Say it like this (60s):**
+Treat prompts and logs as sensitive. Minimize data sent to the model, detect and redact PII, and avoid storing raw user text. Secure secrets, encrypt data, and use strict access controls. Use private deployments if needed for compliance.
 
-**Example**: Replace “john.doe@email.com” with “[EMAIL]” before sending to the model, and keep the mapping only inside your system.
+**Example:**
+Replace “john.doe@email.com” with “[EMAIL]” before sending to the model, and keep the mapping internal.
 
-**Details (optional)**
-- Redaction before inference and before logging.
-- Tenant isolation + audit logs + retention limits.
+**Details (optional):**
+- Redact before inference and logging.
+- Use tenant isolation, audit logs, and retention limits.
 
 ### 4) Explain RAG and when you would use it.
 
-**Say it like this (60s)**: RAG is “search + LLM”. First you store your documents as embeddings. When a user asks a question, you retrieve the most relevant pieces and give them to the LLM, so it answers based on your actual data. Use RAG when your data is private, large, or changes often, and when you want answers grounded in sources.
+**Say it like this (60s):**
+RAG combines search and LLMs. Store documents as embeddings, retrieve relevant pieces for each question, and give them to the LLM. Use RAG when data is private, large, or changes often, and you want answers based on real sources.
 
-**Example**: A finance assistant that must answer from internal policy PDFs → RAG with citations.
+**Example:**
+A finance assistant that must answer from internal policy PDFs uses RAG with citations.
 
-**Details (optional)**
-- Good chunking and metadata filters often matter more than model choice.
-- Add re-ranking if retrieval quality is inconsistent.
+**Details (optional):**
+- Good chunking and metadata filters are key.
+- Add re-ranking if retrieval is inconsistent.
 
 ### 5) How do you fine-tune an LLM for a domain task?
 
-**Say it like this (60–90s)**: Fine-tuning is when you teach the model a repeated pattern so it behaves consistently. I start by defining the exact target behavior and collecting high-quality examples. Then I fine-tune using efficient methods like LoRA/PEFT, evaluate on a holdout set and tricky edge cases, and finally deploy with versioning and monitoring. I only fine-tune when prompting and RAG can’t reach stable quality.
+**Say it like this (60–90s):**
+Fine-tuning means training the model on specific examples so it learns a pattern. Define the target behavior, collect high-quality data, fine-tune using efficient methods (like LoRA/PEFT), and evaluate on edge cases. Only fine-tune if prompting and RAG aren’t enough.
 
-**Example**: Customer support “ticket categorization + reply template” where the output format must always match a strict schema.
+**Example:**
+Customer support ticket categorization and reply templates that must follow a strict schema.
 
-**Details (optional)**
-- Keep training data clean and compliant; don’t include secrets.
-- Maintain regression tests so you don’t break prior behaviors.
+**Details (optional):**
+- Keep training data clean and compliant; avoid secrets.
+- Maintain regression tests to avoid breaking old behaviors.
 
 ### 6) How do you reduce hallucinations?
 
-**Say it like this (60s)**: I reduce hallucinations by not asking the model to “guess”. I ground answers with RAG, set clear instructions like “answer only from provided context”, keep temperature low for factual tasks, and add validation checks. If the system can’t find strong context, it should say it doesn’t know and either ask a question or escalate.
+**Say it like this (60s):**
+Reduce hallucinations by grounding answers with RAG, giving clear instructions (“answer only from provided context”), keeping temperature low, and adding validation. If context is missing, the system should say it doesn’t know or escalate.
 
-**Example**: If retrieval returns nothing relevant, the bot responds: “I don’t have that info in our docs. Which product/version are you using?”
+**Example:**
+If nothing relevant is retrieved, the bot says: “I don’t have that info. Which product/version are you using?”
 
-**Details (optional)**
-- Require citations/quotes.
+**Details (optional):**
+- Require citations or quotes.
 - Add schema validation for structured outputs.
 
 ### 7) What are embeddings and how are they used?
 
-**Say it like this (60s)**: Embeddings turn text into numbers that capture meaning. If two texts mean similar things, their embeddings are close together. That lets you do semantic search: find relevant docs even when the words don’t match exactly.
+**Say it like this (60s):**
+Embeddings turn text into numbers that capture meaning. Similar texts have similar embeddings. This enables semantic search, so you can find relevant docs even if the words are different.
 
-**Example**: User asks “How do I reset my password?” and your doc says “Change account credentials” — embeddings still match them.
+**Example:**
+User asks “How do I reset my password?” and the doc says “Change account credentials”—embeddings match them.
 
-**Details (optional)**
-- Used in RAG retrieval, deduplication, clustering, recommendations.
-- Choose an embedding model that matches your language/domain.
+**Details (optional):**
+- Used in RAG, deduplication, clustering, recommendations.
+- Pick an embedding model suited to your language/domain.
 
 ### 8) How do you manage context in chat applications?
 
-**Say it like this (60s)**: Because models have context limits, I don’t keep the entire chat forever. I keep the most recent turns, summarize older turns, and store important facts (like user preferences) separately so I can retrieve them when needed. This keeps answers consistent and reduces cost.
+**Say it like this (60s):**
+Because models have context limits, keep only recent chat turns, summarize older ones, and store key facts (like user preferences) separately. This keeps answers consistent and reduces cost.
 
-**Example**: Store “user prefers concise answers” as a fact, rather than repeating 50 turns of chat.
+**Example:**
+Store “user prefers concise answers” as a fact, not by repeating all chat history.
 
-**Details (optional)**
-- Use a “facts memory” store + summary + recent window.
-- Treat user history as untrusted input (prompt injection risk).
+**Details (optional):**
+- Use a facts memory, summaries, and a recent window.
+- Treat user history as untrusted input (risk of prompt injection).
 
 ### 9) What do LangChain/LlamaIndex provide (at a high level)?
 
-**Say it like this (45–60s)**: They’re frameworks that help you build LLM apps faster. They provide connectors (read PDFs/web pages), chunking + embedding pipelines, retrieval, prompt templates, tool calling, and agent workflows. I use them to move faster, but I keep my core logic and tests separate.
+**Say it like this (45–60s):**
+They are frameworks for building LLM apps quickly. They offer connectors (for PDFs/web), chunking and embedding pipelines, retrieval, prompt templates, tool calling, and agent workflows. Use them to speed up development, but keep core logic separate.
 
-**Example**: Load a folder of PDFs → chunk → embed → store → query in a few lines.
+**Example:**
+Load PDFs, chunk, embed, store, and query—all in a few lines of code.
 
 ### 10) How do you optimize token usage and cost?
 
-**Say it like this (60s)**: Cost is mainly tokens and latency. I reduce tokens by keeping prompts tight, retrieving only the best context, summarizing long content, and setting output limits. I also cache repeated work (embeddings and retrieval results) and route simple tasks to smaller/cheaper models.
+**Say it like this (60s):**
+Cost comes from tokens and latency. Reduce tokens by making prompts concise, retrieving only the best context, summarizing long content, and limiting output. Cache repeated work and use smaller models for simple tasks.
 
-**Example**: Use a small model to classify intent; call a larger model only when needed.
+**Example:**
+Use a small model for intent classification; call a larger model only when needed.
 
 ### 11) How do you evaluate LLM quality in production?
 
-**Say it like this (60–90s)**: I start with a realistic test set based on real user questions and expected answers. Then I evaluate across quality (correct, grounded, helpful) and engineering metrics (latency, cost, errors). In production, I monitor outcomes, collect user feedback, and regularly re-run the eval suite when prompts, models, or the index changes.
+**Say it like this (60–90s):**
+Start with a test set based on real user questions and expected answers. Evaluate quality (correct, grounded, helpful) and engineering metrics (latency, cost, errors). In production, monitor outcomes, collect feedback, and re-run evaluations after changes.
 
-**Example**: Every time the KB updates or the model version changes, run a regression eval and compare scores.
+**Example:**
+When the knowledge base or model changes, run regression tests and compare scores.
 
 ### 12) What is a vector database and why use one?
 
-**Say it like this (45–60s)**: A vector DB stores embeddings and lets you quickly find “most similar” text. It’s used in RAG to retrieve relevant chunks fast, even at large scale.
+**Say it like this (45–60s):**
+A vector database stores embeddings and lets you quickly find the most similar text. It’s used in RAG to retrieve relevant chunks fast, even at large scale.
 
-**Example**: Search across 1M internal paragraphs in milliseconds.
+**Example:**
+Search across 1 million internal paragraphs in milliseconds.
 
-**Details (optional)**
+**Details (optional):**
 - Metadata filtering prevents cross-tenant leakage.
 - Re-ranking can improve accuracy.
 
 ### 13) Prompting vs fine-tuning—how do you choose?
 
-**Say it like this (60s)**: I use a simple decision order: (1) prompt improvements, (2) add RAG if knowledge is missing, (3) fine-tune only if the behavior still isn’t consistent enough. Fine-tuning is powerful but costs more and needs maintenance.
+**Say it like this (60s):**
+First, improve prompts. If knowledge is missing, add RAG. Fine-tune only if behavior still isn’t consistent. Fine-tuning is powerful but more costly and needs maintenance.
 
-**Example**: Need latest product docs → RAG. Need the model to always return a strict structured template → fine-tune.
+**Example:**
+Need latest docs → RAG. Need strict output format → fine-tune.
 
 ### 14) What is model drift in GenAI systems?
 
-**Say it like this (60s)**: Drift means the system’s quality changes over time. It can happen because your documents change, user questions change, or you upgraded the model/provider. I detect drift by monitoring real traffic, keeping versioned prompts/indexes, and running the same evaluation set regularly.
+**Say it like this (60s):**
+Model drift means the system’s quality changes over time, often due to changes in data, user questions, or model updates. Detect drift by monitoring real traffic, versioning prompts and indexes, and running regular evaluations.
 
-**Example**: After a policy update, old answers become wrong unless the RAG index is refreshed.
+**Example:**
+After a policy update, old answers may be wrong unless the RAG index is refreshed.
 
 ### 15) Zero-shot vs few-shot: when does few-shot help most?
 
-**Say it like this (45–60s)**: Few-shot helps most when the model needs to follow a specific pattern: strict output format, tricky label rules, or a consistent tone. One good example often beats a long explanation.
+**Say it like this (45–60s):**
+Few-shot helps most when the model needs to follow a specific pattern, strict format, or tricky rules. One good example is often better than a long explanation.
 
-**Example**: Show one example of “good vs bad” classification for moderation.
+**Example:**
+Show an example of “good vs bad” classification for moderation.
 
 ### 16) How do you choose chunk size and overlap in RAG?
 
-**Say it like this (60s)**: Chunking is splitting documents into pieces for retrieval. I choose chunk sizes that keep meaning together (often 200–800 tokens depending on docs), add a little overlap so sentences don’t get cut, and then validate by checking retrieval quality on real questions.
+**Say it like this (60s):**
+Chunking means splitting documents for retrieval. Choose chunk sizes that keep meaning together (often 200–800 tokens), add some overlap to avoid cutting sentences, and validate by testing retrieval quality.
 
-**Example**: For policy docs, chunk by headings/sections so each chunk is a complete rule.
+**Example:**
+For policy docs, chunk by headings so each chunk is a full rule.
 
-**Details (optional)**
-- Too small: retrieval misses full context.
-- Too large: wastes tokens and pulls irrelevant content.
+**Details (optional):**
+- Too small: misses context. Too large: wastes tokens, adds irrelevant info.
 
 ### 17) How do you secure API keys and secrets?
 
-**Say it like this (45–60s)**: Never hardcode secrets. Use a secret manager, least privilege, rotation, and monitoring. Keep separate keys for environments and lock down who/what can use them.
+**Say it like this (45–60s):**
+Never hardcode secrets. Use a secret manager, least privilege, rotate keys, and monitor usage. Separate keys by environment and restrict access.
 
-**Example**: Store keys in AWS Secrets Manager (or similar), inject at runtime, rotate monthly.
+**Example:**
+Store keys in AWS Secrets Manager, inject at runtime, rotate monthly.
 
 ### 18) What’s the role of caching in GenAI pipelines?
 
-**Say it like this (45–60s)**: Caching saves money and time. You can cache embeddings, retrieval results, and sometimes final answers for repeated questions. The key is correct invalidation—if docs change, caches must expire.
+**Say it like this (45–60s):**
+Caching saves time and money. Cache embeddings, retrieval results, and sometimes answers for repeated questions. Make sure caches expire when documents change.
 
-**Example**: Cache retrieval results for “reset password” because it’s asked thousands of times.
+**Example:**
+Cache retrieval results for “reset password” since it’s a common question.
 
 ### 19) How do you control tone and writing style reliably?
 
-**Say it like this (60s)**: Start with clear instructions: tone, length, audience, and format. Add 1–2 examples and a checklist (e.g., “no jargon, 6th-grade reading level”). Then validate outputs. Fine-tune only if you need near-perfect consistency at scale.
+**Say it like this (60s):**
+Give clear instructions for tone, length, audience, and format. Add examples and a checklist (e.g., “no jargon, 6th-grade reading level”). Validate outputs. Fine-tune only if you need perfect consistency.
 
-**Example**: “Write in a polite, professional tone. Max 6 bullets. No acronyms unless explained.”
+**Example:**
+“Write in a polite, professional tone. Max 6 bullets. No acronyms unless explained.”
 
 ### 20) How do you integrate GenAI into existing workflows?
 
-**Say it like this (60–90s)**: I integrate GenAI like any other service: put it behind an API, connect it to systems like CRM/ticketing/docs, and add controls so it can’t take unsafe actions. I add approvals for high-impact steps, logging/auditing, and dashboards for cost and quality. Finally, I measure ROI with clear metrics.
+**Say it like this (60–90s):**
+Integrate GenAI like any service: put it behind an API, connect to systems (CRM, ticketing, docs), and add controls to prevent unsafe actions. Add approvals for high-impact steps, logging, and dashboards for cost and quality. Measure ROI with clear metrics.
 
-**Example**: Draft a ticket reply automatically, but require an agent to approve before sending.
+**Example:**
+Draft a ticket reply automatically, but require agent approval before sending.
 
-**Details (optional)**
-- Observability: trace requests end-to-end, version prompts/models, avoid logging PII.
-- Business metrics: time saved, resolution rate, error reduction.
+**Details (optional):**
+- Observability: trace requests, version prompts/models, avoid logging PII.
+- Metrics: time saved, resolution rate, error reduction.
 
 ## Quick daily drill (5 minutes)
 
