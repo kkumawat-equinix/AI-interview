@@ -159,3 +159,45 @@ Can walk through at least one real-world or side project
 Comfortable switching between system design and code-level details
 
 Ready to challenge or improve prompt/agent design during a whiteboard/chat discussion
+
+
+
+
+✅ Machine Learning Basics – Must-Know Concepts 🤖📊  
+
+1️⃣ What is Machine Learning?  
+📌 A branch of AI where systems learn patterns from data without explicit programming.  
+💡 Goal: Make predictions or decisions based on past data.
+
+2️⃣ Types of ML  
+– Supervised Learning: Labeled data → predicts outcomes (e.g., spam detection)  
+– Unsupervised Learning: Finds patterns in unlabeled data (e.g., clustering)  
+– Reinforcement Learning: Learns via rewards/punishments (e.g., game AI)
+
+3️⃣ Key Algorithms  
+– Linear Regression → predicts continuous values  
+– Logistic Regression → predicts probabilities/class  
+– Decision Trees → interpretable classification/regression  
+– K-Means → clustering similar data points  
+– Random Forest, SVM, Gradient Boosting → advanced predictive models
+
+4️⃣ Model Evaluation Metrics  
+– Accuracy, Precision, Recall, F1-Score (classification)  
+– RMSE, MAE (regression)  
+– Confusion Matrix → visualize true vs predicted labels
+
+5️⃣ Feature Engineering  
+⚙️ Transform raw data into meaningful inputs  
+💡 Examples: normalization, encoding categorical variables, handling missing data
+
+6️⃣ Overfitting vs Underfitting  
+🔺 Overfitting → model too complex, memorizes training data  
+🔻 Underfitting → model too simple, misses patterns
+🛠 Solutions: Regularization, cross-validation, more data
+
+7️⃣ Training & Testing Split  
+📊 Split data into train (learn) and test (evaluate) sets to measure performance.
+
+8️⃣ Popular Tools & Libraries  
+– Python: scikit-learn, TensorFlow, PyTorch, Pandas, NumPy  
+– R, MATLAB for specialized ML tasks
