@@ -1,4 +1,5 @@
-Data Science Basics
+## Data Science Basics
+
 1. What is data science and how is it different from data analytics?
 2. What are the key steps in a data science lifecycle?
 3. What types of problems does data science solve?
@@ -10,7 +11,8 @@ Data Science Basics
 9. What is the difference between supervised and unsupervised learning?
 10. What is bias in data and how does it affect models?
 
-Statistics and Probability
+## Statistics and Probability
+
 11. What is the difference between mean, median, and mode?
 12. What is standard deviation and variance?
 13. What is probability distribution?
@@ -22,7 +24,8 @@ Statistics and Probability
 19. What is p-value?
 20. What is confidence interval?
 
-Data Cleaning and Preprocessing
+## Data Cleaning and Preprocessing
+
 21. How do you handle missing values?
 22. How do you treat outliers?
 23. What is data normalization and standardization?
@@ -34,7 +37,8 @@ Data Cleaning and Preprocessing
 29. What is duplicate data and how do you handle it?
 30. How do you validate data quality?
 
-Python for Data Science
+## Python for Data Science
+
 31. Why is Python popular in data science?
 32. Difference between list, tuple, set, and dictionary?
 33. What is NumPy and why is it fast?
@@ -46,7 +50,8 @@ Python for Data Science
 39. How do you handle large datasets in Python?
 40. What are common Python libraries used in data science?
 
-Data Visualization
+## Data Visualization
+
 41. Why is data visualization important?
 42. Difference between bar chart and histogram?
 43. When do you use box plots?
@@ -58,7 +63,8 @@ Data Visualization
 49. What is dashboarding?
 50. How do you choose the right chart?
 
-Machine Learning Basics
+## Machine Learning Basics
+
 51. What is machine learning?
 52. Difference between regression and classification?
 53. What is overfitting and underfitting?
@@ -70,7 +76,8 @@ Machine Learning Basics
 59. What is baseline model?
 60. How do you choose a model?
 
-Supervised Learning
+## Supervised Learning
+
 61. How does linear regression work?
 62. Assumptions of linear regression?
 63. What is logistic regression?
@@ -82,7 +89,8 @@ Supervised Learning
 69. What are ensemble methods?
 70. How do you tune hyperparameters?
 
-Unsupervised Learning
+## Unsupervised Learning
+
 71. What is clustering?
 72. Difference between K-means and hierarchical clustering?
 73. How do you choose value of K?
@@ -94,7 +102,8 @@ Unsupervised Learning
 79. What is cosine similarity?
 80. Where is unsupervised learning used?
 
-Model Evaluation Metrics
+## Model Evaluation Metrics
+
 81. What is accuracy and when is it misleading?
 82. What is precision and recall?
 83. What is F1 score?
@@ -106,7 +115,8 @@ Model Evaluation Metrics
 89. What metric do you use for imbalanced data?
 90. How do business metrics link to ML metrics?
 
-Deployment and Real-World Practice
+## Deployment and Real-World Practice
+
 91. What is model deployment?
 92. What is batch vs real-time prediction?
 93. What is model drift?
