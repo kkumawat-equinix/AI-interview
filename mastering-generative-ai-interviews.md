@@ -407,3 +407,690 @@ Vector databases store high-dimensional embeddings and enable efficient approxim
 Log every request/response with latency, token counts, and error rates. Track quality metrics (groundedness, hallucination rate, CSAT). Use A/B testing for model/prompt changes, set up drift detection alerts, and maintain an audit trail for compliance.
 
 ---
+1. System Design
+1. How would you design a production-ready RAG architecture for a large enterprise knowledge base?
+
+I would design a layered architecture:
+
+Data ingestion pipeline – collect enterprise documents, clean them, chunk with overlap, and generate embeddings.
+
+Vector database – store embeddings with metadata for efficient semantic search.
+
+Retriever layer – retrieve top-K relevant documents using vector or hybrid search.
+
+Reranking – improve retrieval precision using a cross-encoder or reranker model.
+
+Prompt construction – combine query + retrieved context.
+
+LLM generation – generate grounded responses with citations.
+
+Guardrails – input filtering, hallucination control, safety checks.
+
+Monitoring – track retrieval quality, latency, hallucination rate, and cost.
+
+For scalability I add caching, async pipelines, and autoscaling infrastructure.
+
+2. How would you design a multi-agent system for task automation?
+
+I would structure the system with specialized agents coordinated by an orchestrator.
+
+Components:
+
+User interface
+
+Planner agent – breaks tasks into steps
+
+Specialized agents – research, analysis, execution
+
+Tool layer – APIs, databases, search
+
+Memory layer – conversation + task state
+
+Controller/orchestrator – coordinates agents
+
+Safety layer – permissions and validation
+
+Agents collaborate through structured messages and shared memory to complete complex workflows.
+
+3. How would you design a Gen AI system that supports millions of users?
+
+I would focus on horizontal scalability and cost control:
+
+Deploy models with container orchestration (Kubernetes)
+
+Use autoscaling inference servers
+
+Implement request batching and caching
+
+Add model routing (small models for simple queries)
+
+Use RAG to reduce token usage
+
+Add CDN + API gateway for traffic management
+
+The goal is maintaining low latency and predictable cost at scale.
+
+4. How would you architect a real-time document summarization system?
+
+Architecture:
+
+Document ingestion service
+
+Preprocessing and chunking
+
+Parallel summarization of chunks
+
+Hierarchical summarization (combine summaries)
+
+Final summary generation
+
+Caching for repeated requests
+
+This hierarchical approach improves speed and scalability for large documents.
+
+5. How would you design a multi-tenant Gen AI platform?
+
+I would isolate tenants at multiple layers:
+
+Separate API keys and authentication
+
+Tenant-specific knowledge bases and vector indexes
+
+Resource quotas and rate limiting
+
+Metadata filtering per tenant
+
+Usage monitoring and billing
+
+This ensures data isolation, security, and cost control.
+
+2. RAG Architecture & Retrieval
+6. How do you debug a RAG system producing hallucinated answers?
+
+I check three areas:
+
+Retrieval quality – verify if relevant documents are retrieved.
+
+Prompt grounding – ensure the prompt forces answers from context.
+
+Context quality – remove noisy or outdated documents.
+
+Most hallucinations come from poor retrieval or weak prompt constraints.
+
+7. How do you improve retrieval accuracy in a RAG pipeline?
+
+Key improvements:
+
+Better chunk size and overlap
+
+Use higher quality embedding models
+
+Apply hybrid search (vector + keyword)
+
+Add reranking models
+
+Tune top-K retrieval
+
+Use metadata filtering
+
+This increases retrieval relevance.
+
+8. Trade-offs between hybrid search and vector search?
+
+Vector search captures semantic similarity, but may miss exact keyword matches.
+Keyword search is precise but lacks semantic understanding.
+
+Hybrid search combines both, improving recall but increasing complexity and compute cost.
+
+9. How evaluate retrieved document quality?
+
+Metrics include:
+
+Recall@K
+
+Precision@K
+
+Context relevance scores
+
+Human evaluation
+
+LLM-based evaluation
+
+These measure whether retrieved context actually supports the answer.
+
+10. When choose fine-tuning instead of RAG?
+
+Fine-tuning is better when:
+
+The task requires consistent structured output
+
+Domain knowledge is stable and small
+
+Behavior modification is needed
+
+RAG is preferred when knowledge changes frequently.
+
+3. Agentic Systems
+11. How design reliable agent loop with tool usage?
+
+Design includes:
+
+Planning step
+
+Tool selection
+
+Tool execution
+
+Validation step
+
+Final response generation
+
+Add iteration limits, schema validation, retries, and logging to ensure reliability.
+
+12. Prevent infinite loops in agents?
+
+Strategies:
+
+Maximum iteration limits
+
+Loop detection
+
+Failure counters
+
+Stop conditions
+
+Timeouts
+
+This prevents runaway agent behavior.
+
+13. Handle tool failures in agent pipeline?
+
+I implement:
+
+Retry logic with exponential backoff
+
+Error handling and structured responses
+
+Alternative tools
+
+Fallback to human escalation
+
+Tools should never crash the agent loop.
+
+14. Add memory to agents?
+
+Memory types:
+
+Short-term memory – conversation history
+
+Long-term memory – vector database storage
+
+Task memory – workflow state
+
+This allows agents to maintain context across interactions.
+
+15. When avoid agents?
+
+Agents should be avoided when:
+
+Task is deterministic
+
+Workflow is fixed
+
+Real-time latency is critical
+
+In such cases, simple pipelines or rule systems are more reliable.
+
+4. Production Challenges
+16. Latency suddenly increased. How debug?
+
+Check:
+
+LLM inference latency
+
+Vector database response time
+
+Token length increase
+
+Network/API bottlenecks
+
+Infrastructure scaling
+
+Use tracing and performance monitoring.
+
+17. LLM API cost doubled. Optimize?
+
+Strategies:
+
+Reduce context size
+
+Limit max tokens
+
+Cache responses
+
+Use smaller models
+
+Model routing
+
+Batch requests
+
+Cost optimization focuses on token reduction.
+
+18. Scale LLM infrastructure?
+
+Use:
+
+Autoscaling inference servers
+
+Load balancing
+
+Distributed vector databases
+
+Caching layers
+
+Request batching
+
+This ensures high throughput.
+
+19. Reduce token usage?
+
+Methods:
+
+Context summarization
+
+Smart retrieval (top-K)
+
+Prompt compression
+
+Response length limits
+
+Caching repeated answers
+
+Token reduction directly lowers cost.
+
+20. Fallback strategies when LLM fails?
+
+Fallback options:
+
+Retry with smaller prompt
+
+Switch to backup model
+
+Use cached responses
+
+Return partial results
+
+Escalate to human agent
+
+This ensures system reliability.
+
+5. Evaluation & Monitoring
+21. Evaluate outputs without ground truth?
+
+Use:
+
+Human evaluation
+
+LLM-as-judge scoring
+
+Pairwise comparison
+
+Consistency testing
+
+These help measure quality without reference answers.
+
+22. Production metrics to monitor?
+
+Key metrics:
+
+Latency (P95)
+
+Token usage
+
+Cost per request
+
+Hallucination rate
+
+Retrieval accuracy
+
+Error rate
+
+User satisfaction
+
+Monitoring ensures system stability.
+
+23. Test prompt changes before deployment?
+
+Process:
+
+Offline benchmark testing
+
+A/B testing
+
+Canary deployment
+
+Monitoring performance metrics
+
+This prevents regressions.
+
+6. Security & Safety
+24. Protect RAG from prompt injection?
+
+Methods:
+
+Separate system prompts
+
+Validate retrieved documents
+
+Filter malicious input
+
+Restrict tool access
+
+Output validation
+
+Security must exist at prompt and tool layers.
+
+25. Handle sensitive or PII data?
+
+Approach:
+
+PII detection and masking
+
+Access control policies
+
+Encryption
+
+Tenant isolation
+
+Compliance monitoring
+
+This ensures privacy and regulatory compliance.
+
+Large Enterprise RAG System
+
+Question:
+How would you design a RAG system for a company with millions of documents across multiple departments?
+
+Focus areas interviewers expect:
+
+document ingestion pipeline
+
+chunking strategy
+
+embeddings
+
+vector DB scaling
+
+metadata filtering
+
+hybrid search
+
+access control
+
+2️⃣ Multi-Tenant GenAI Platform
+
+Question:
+How would you design a multi-tenant GenAI platform where multiple companies can upload their knowledge bases and query them securely?
+
+Key considerations:
+
+tenant isolation
+
+vector DB partitioning
+
+authentication & authorization
+
+cost tracking
+
+3️⃣ Real-Time Document Summarization System
+
+Question:
+Design a system that summarizes thousands of documents uploaded every minute.
+
+Challenges:
+
+streaming ingestion
+
+batch processing
+
+queue systems
+
+LLM inference scaling
+
+4️⃣ Customer Support AI Assistant
+
+Question:
+Design a customer support AI chatbot using RAG for a global enterprise.
+
+Important areas:
+
+conversation memory
+
+retrieval accuracy
+
+escalation to human agent
+
+monitoring hallucinations
+
+5️⃣ GenAI System for Millions of Users
+
+Question:
+How would you scale a GenAI application to handle millions of daily users?
+
+Topics to discuss:
+
+load balancing
+
+model serving infrastructure
+
+caching
+
+request batching
+
+6️⃣ Multi-Agent Workflow Automation
+
+Question:
+Design a multi-agent system for automating business workflows.
+
+Architecture ideas:
+
+planner agent
+
+executor agent
+
+tool integration
+
+agent coordination
+
+7️⃣ Tool-Using Autonomous Agent
+
+Question:
+Design an agent that can search the web, call APIs, and write reports automatically.
+
+Discuss:
+
+tool registry
+
+tool selection
+
+execution monitoring
+
+safety guardrails
+
+8️⃣ Preventing Hallucinations in Production
+
+Question:
+Your AI system is hallucinating answers in production.
+How would you redesign the architecture?
+
+Possible solutions:
+
+retrieval grounding
+
+verification layer
+
+fact-checking pipeline
+
+9️⃣ GenAI Cost Optimization Architecture
+
+Question:
+Your company spends $1M/month on LLM APIs.
+How would you redesign the system to reduce costs?
+
+Ideas:
+
+smaller models
+
+caching
+
+prompt compression
+
+task routing
+
+🔟 LLM Latency Optimization
+
+Question:
+Your GenAI system takes 15 seconds per request.
+How would you redesign the architecture?
+
+Possible improvements:
+
+streaming responses
+
+async pipelines
+
+caching
+
+model distillation
+
+11️⃣ Continuous Knowledge Updates in RAG
+
+Question:
+How would you design a RAG system where documents are updated every few minutes?
+
+Key parts:
+
+incremental indexing
+
+background embedding pipeline
+
+version control
+
+12️⃣ LLM Evaluation System
+
+Question:
+Design a system that automatically evaluates LLM outputs in production.
+
+Important concepts:
+
+human feedback loop
+
+LLM judge models
+
+evaluation metrics
+
+13️⃣ Long Context Document QA System
+
+Question:
+How would you design a system to answer questions from 1000-page documents?
+
+Solutions:
+
+hierarchical chunking
+
+retrieval pipelines
+
+summarization layers
+
+14️⃣ AI Copilot for Developers
+
+Question:
+Design an AI coding assistant like
+GitHub Copilot.
+
+Key areas:
+
+context retrieval from codebase
+
+IDE integration
+
+latency constraints
+
+15️⃣ Multimodal GenAI System
+
+Question:
+Design a system that processes text, images, and audio queries.
+
+Architecture includes:
+
+multimodal embeddings
+
+model routing
+
+unified retrieval system
+
+16️⃣ AI Search Engine
+
+Question:
+Design an AI search engine similar to
+Perplexity AI.
+
+Components:
+
+web crawler
+
+indexing pipeline
+
+retrieval + generation
+
+17️⃣ Secure Enterprise GenAI
+
+Question:
+How would you design a secure GenAI platform that handles confidential company data?
+
+Important aspects:
+
+encryption
+
+role-based access control
+
+audit logging
+
+18️⃣ Prompt Injection Protection Architecture
+
+Question:
+How would you design a system to detect and prevent prompt injection attacks?
+
+Techniques:
+
+input validation
+
+context filtering
+
+policy enforcement
+
+19️⃣ Feedback-Driven Learning System
+
+Question:
+Design a system where user feedback improves model responses over time.
+
+Mechanisms:
+
+feedback collection
+
+dataset creation
+
+model fine-tuning
+
+20️⃣ Reliable Agent System
+
+Question:
+How would you design a reliable agent system that avoids tool failures and infinite loops?
+
+Architecture should include:
+
+iteration limits
+
+tool validation
+
+fallback workflows
