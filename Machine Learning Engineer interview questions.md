@@ -664,262 +664,622 @@ Quantize or compress models by reducing precision (e.g., float32 to int8), pruni
 
 🧠 121–140 | Advanced ML Theory
 
-What are the assumptions behind logistic regression?
+Q121. What are the assumptions behind logistic regression?
 
-How do you interpret model coefficients in logistic regression?
+Answer:
+Logistic regression assumes linearity between features and log-odds, independence of observations, no multicollinearity, and a large sample size.
 
-What’s the ROC curve intuition?
+Q122. How do you interpret model coefficients in logistic regression?
 
-Why does gradient boosting use shallow trees?
+Answer:
+Coefficients represent the change in log-odds of the outcome per unit change in the predictor; exponentiating gives the odds ratio.
 
-What is label smoothing and why is it used?
+Q123. What’s the ROC curve intuition?
 
-What is the difference between hard and soft margin in SVM?
+Answer:
+The ROC curve plots true positive rate vs. false positive rate at various thresholds, showing a model’s ability to distinguish classes.
 
-How does a kernel function work mathematically?
+Q124. Why does gradient boosting use shallow trees?
 
-What is the curse of overparameterization?
+Answer:
+Shallow trees reduce overfitting and allow the ensemble to learn complex patterns incrementally, improving generalization.
 
-How do you visualize high-dimensional data?
+Q125. What is label smoothing and why is it used?
 
-What is the difference between supervised pretraining and self-supervised learning?
+Answer:
+Label smoothing replaces hard labels with soft probabilities, reducing overconfidence and improving generalization in classification.
 
-What are attention masks used for in Transformers?
+Q126. What is the difference between hard and soft margin in SVM?
 
-What is zero-shot learning?
+Answer:
+Hard margin requires perfect separation; soft margin allows some misclassification, improving robustness to noisy data.
 
-What is few-shot learning?
+Q127. How does a kernel function work mathematically?
 
-What is contrastive learning?
+Answer:
+A kernel function computes similarity in a higher-dimensional space without explicit transformation, enabling non-linear separation.
 
-How does CLIP (Contrastive Language–Image Pretraining) work?
+Q128. What is the curse of overparameterization?
 
-What are the challenges in training LLMs from scratch?
+Answer:
+Overparameterization can lead to models memorizing data, increasing risk of overfitting and poor generalization.
 
-How does reinforcement learning from human feedback (RLHF) work?
+Q129. How do you visualize high-dimensional data?
 
-What is policy gradient in RL?
+Answer:
+Use techniques like PCA, t-SNE, or UMAP to reduce dimensions for visualization while preserving structure.
 
-What is PPO (Proximal Policy Optimization)?
+Q130. What is the difference between supervised pretraining and self-supervised learning?
 
-What’s the difference between actor-critic and value-based methods?
+Answer:
+Supervised pretraining uses labeled data; self-supervised learning creates labels from data itself, enabling learning from unlabeled data.
+
+Q131. What are attention masks used for in Transformers?
+
+Answer:
+Attention masks control which tokens are attended to, preventing information leakage and handling variable-length sequences.
+
+Q132. What is zero-shot learning?
+
+Answer:
+Zero-shot learning enables models to make predictions for unseen classes by leveraging semantic relationships or descriptions.
+
+Q133. What is few-shot learning?
+
+Answer:
+Few-shot learning trains models to generalize from very few examples, often using meta-learning or transfer learning techniques.
+
+Q134. What is contrastive learning?
+
+Answer:
+Contrastive learning trains models to distinguish between similar and dissimilar pairs, improving representation quality.
+
+Q135. How does CLIP (Contrastive Language–Image Pretraining) work?
+
+Answer:
+CLIP learns joint representations of images and text by aligning them in a shared embedding space using contrastive loss.
+
+Q136. What are the challenges in training LLMs from scratch?
+
+Answer:
+Challenges include massive data and compute requirements, stability, scaling, and ensuring quality and safety of outputs.
+
+Q137. How does reinforcement learning from human feedback (RLHF) work?
+
+Answer:
+RLHF uses human-provided rewards to guide model training, improving alignment with human preferences and values.
+
+Q138. What is policy gradient in RL?
+
+Answer:
+Policy gradient methods optimize the policy directly by computing gradients of expected reward with respect to policy parameters.
+
+Q139. What is PPO (Proximal Policy Optimization)?
+
+Answer:
+PPO is an RL algorithm that updates policies conservatively, balancing exploration and stability for efficient learning.
+
+Q140. What’s the difference between actor-critic and value-based methods?
+
+Answer:
+Actor-critic combines policy (actor) and value estimation (critic); value-based methods learn only the value function for decision-making.
 
 
 
 🧩 141–160 | Data Engineering & Pipelines
 
-What is a data pipeline in ML?
+Q141. What is a data pipeline in ML?
 
-How do you design a scalable data ingestion system?
+Answer:
+A data pipeline automates the flow of data from source to destination, including extraction, transformation, and loading for ML tasks.
 
-What is ETL vs ELT?
+Q142. How do you design a scalable data ingestion system?
 
-What’s the purpose of feature normalization in pipelines?
+Answer:
+Use distributed systems, batch and streaming processing, message queues, and robust error handling to ensure scalability and reliability.
 
-How do you monitor data drift?
+Q143. What is ETL vs ELT?
 
-What is concept drift vs data drift?
+Answer:
+ETL (Extract, Transform, Load) transforms data before loading; ELT (Extract, Load, Transform) loads raw data first, then transforms it in the destination.
 
-How do you handle streaming data for ML?
+Q144. What’s the purpose of feature normalization in pipelines?
 
-What’s Apache Kafka used for in ML?
+Answer:
+Feature normalization scales data to a common range, improving model convergence and performance.
 
-What are feature stores like Feast or Tecton?
+Q145. How do you monitor data drift?
 
-How do you automate data preprocessing in production?
+Answer:
+Monitor data drift by tracking statistical properties, distributions, and model performance over time.
 
-How would you implement online feature generation?
+Q146. What is concept drift vs data drift?
 
-What is schema validation and why is it important?
+Answer:
+Data drift is changes in input data distribution; concept drift is changes in the relationship between inputs and outputs.
 
-What is a DAG (Directed Acyclic Graph) in data workflows?
+Q147. How do you handle streaming data for ML?
 
-What tools can orchestrate ML pipelines (Airflow, Kubeflow, Prefect)?
+Answer:
+Use real-time processing frameworks (e.g., Apache Kafka, Spark Streaming) and incremental model updates.
 
-How do you log and track dataset versions?
+Q148. What’s Apache Kafka used for in ML?
 
-What is data lineage?
+Answer:
+Kafka is used for real-time data ingestion, streaming, and integration between ML components.
 
-How do you ensure reproducibility in ML experiments?
+Q149. What are feature stores like Feast or Tecton?
 
-What are the benefits of TFRecords and Parquet formats?
+Answer:
+Feature stores manage, serve, and reuse features for ML models, ensuring consistency and scalability.
 
-What’s the difference between batch and real-time feature pipelines?
+Q150. How do you automate data preprocessing in production?
 
-What is federated learning?
+Answer:
+Automate preprocessing with pipelines, orchestration tools, and versioning to ensure reproducibility and reliability.
+
+Q151. How would you implement online feature generation?
+
+Answer:
+Use real-time data processing and feature engineering frameworks to generate features on-the-fly for live predictions.
+
+Q152. What is schema validation and why is it important?
+
+Answer:
+Schema validation checks data structure and types, preventing errors and ensuring data quality in ML pipelines.
+
+Q153. What is a DAG (Directed Acyclic Graph) in data workflows?
+
+Answer:
+A DAG represents tasks and dependencies in data workflows, ensuring proper execution order and avoiding cycles.
+
+Q154. What tools can orchestrate ML pipelines (Airflow, Kubeflow, Prefect)?
+
+Answer:
+Tools like Airflow, Kubeflow, and Prefect automate, schedule, and monitor ML workflows and pipelines.
+
+Q155. How do you log and track dataset versions?
+
+Answer:
+Use version control systems, metadata tracking, and tools like DVC or MLflow to log and manage dataset versions.
+
+Q156. What is data lineage?
+
+Answer:
+Data lineage tracks the origin, transformations, and flow of data, ensuring transparency and reproducibility.
+
+Q157. How do you ensure reproducibility in ML experiments?
+
+Answer:
+Log code, data, parameters, and environment; use version control and experiment tracking tools.
+
+Q158. What are the benefits of TFRecords and Parquet formats?
+
+Answer:
+TFRecords and Parquet are efficient, scalable, and support compression, making them ideal for large ML datasets.
+
+Q159. What’s the difference between batch and real-time feature pipelines?
+
+Answer:
+Batch pipelines process data in bulk; real-time pipelines generate features instantly for live predictions.
+
+Q160. What is federated learning?
+
+Answer:
+Federated learning trains models across decentralized devices, preserving privacy by keeping data local.
 
 
 
 ⚙️ 161–180 | MLOps & Deployment
 
-What are the main stages of an MLOps lifecycle?
+Q161. What are the main stages of an MLOps lifecycle?
 
-What are CI/CD pipelines for ML?
+Answer:
+Stages include data collection, model development, deployment, monitoring, maintenance, and retraining.
 
-How do you deploy an ML model using Docker?
+Q162. What are CI/CD pipelines for ML?
 
-How would you deploy a model on AWS / GCP / Azure?
+Answer:
+CI/CD pipelines automate building, testing, and deploying ML models, ensuring rapid and reliable updates.
 
-What is model registry?
+Q163. How do you deploy an ML model using Docker?
 
-What is canary deployment?
+Answer:
+Package the model and dependencies in a Docker container, then deploy to a server or cloud platform for consistent execution.
 
-What’s the difference between batch inference and online inference?
+Q164. How would you deploy a model on AWS / GCP / Azure?
 
-How do you monitor latency and throughput of an ML API?
+Answer:
+Use managed services like AWS SageMaker, GCP AI Platform, or Azure ML to deploy, scale, and monitor models.
 
-What is model rollback?
+Q165. What is model registry?
 
-How do you perform shadow deployment?
+Answer:
+A model registry stores, tracks, and manages ML models, versions, and metadata for reproducibility and governance.
 
-What is A/B testing in ML deployment?
+Q166. What is canary deployment?
 
-How do you handle model versioning?
+Answer:
+Canary deployment releases a new model to a small subset of users, monitoring performance before full rollout.
 
-What are monitoring metrics for ML models?
+Q167. What’s the difference between batch inference and online inference?
 
-What is concept drift detection?
+Answer:
+Batch inference processes multiple inputs at once; online inference handles real-time predictions for individual requests.
 
-How do you retrain models automatically?
+Q168. How do you monitor latency and throughput of an ML API?
 
-What is a serving layer in ML architecture?
+Answer:
+Use metrics dashboards, logging, and alerting tools to track response times and request rates.
 
-What’s the difference between REST and gRPC for model serving?
+Q169. What is model rollback?
 
-How do you secure ML APIs?
+Answer:
+Model rollback reverts to a previous model version if the new deployment underperforms or causes issues.
 
-What is Kubernetes and how does it help in MLOps?
+Q170. How do you perform shadow deployment?
 
-What are microservices in the context of ML systems?
+Answer:
+Shadow deployment runs a new model alongside the current one, comparing outputs without affecting users.
+
+Q171. What is A/B testing in ML deployment?
+
+Answer:
+A/B testing splits traffic between models, measuring performance to select the best for production.
+
+Q172. How do you handle model versioning?
+
+Answer:
+Use tools like MLflow, DVC, or custom naming conventions to track and manage model versions.
+
+Q173. What are monitoring metrics for ML models?
+
+Answer:
+Metrics include accuracy, precision, recall, latency, throughput, drift, and resource usage.
+
+Q174. What is concept drift detection?
+
+Answer:
+Concept drift detection monitors changes in the relationship between input and output, triggering retraining if needed.
+
+Q175. How do you retrain models automatically?
+
+Answer:
+Set up scheduled jobs or triggers based on performance metrics to retrain and redeploy models.
+
+Q176. What is a serving layer in ML architecture?
+
+Answer:
+A serving layer provides APIs or endpoints for model inference, handling requests and scaling as needed.
+
+Q177. What’s the difference between REST and gRPC for model serving?
+
+Answer:
+REST uses HTTP and is language-agnostic; gRPC uses binary protocol, supports streaming, and is faster for large-scale serving.
+
+Q178. How do you secure ML APIs?
+
+Answer:
+Use authentication, authorization, encryption, rate limiting, and monitoring to protect ML APIs.
+
+Q179. What is Kubernetes and how does it help in MLOps?
+
+Answer:
+Kubernetes orchestrates containerized ML workloads, enabling scalable, automated deployment and management.
+
+Q180. What are microservices in the context of ML systems?
+
+Answer:
+Microservices are modular components that handle specific ML tasks, improving scalability, maintainability, and deployment flexibility.
 
 
 
 🤖 181–200 | GenAI & LLMs
 
-What is fine-tuning vs prompt-tuning?
+Q181. What is fine-tuning vs prompt-tuning?
 
-What is adapter tuning?
+Answer:
+Fine-tuning updates all or part of a model’s parameters on new data; prompt-tuning modifies input prompts or a small set of parameters to adapt the model without full retraining.
 
-What is LoRA and why is it efficient?
+Q182. What is adapter tuning?
 
-What is quantization in LLMs?
+Answer:
+Adapter tuning adds small trainable layers (adapters) to a frozen model, enabling efficient task adaptation with minimal parameter updates.
 
-What is pruning and how does it reduce model size?
+Q183. What is LoRA and why is it efficient?
 
-How does a transformer encoder differ from a decoder?
+Answer:
+LoRA (Low-Rank Adaptation) injects low-rank matrices into model layers, reducing trainable parameters and memory usage for efficient fine-tuning.
 
-Explain key, query, and value in attention mechanisms.
+Q184. What is quantization in LLMs?
 
-What is multi-head attention and why use it?
+Answer:
+Quantization reduces numerical precision of model weights (e.g., float32 to int8), decreasing memory and speeding up inference.
 
-What is position encoding in Transformers?
+Q185. What is pruning and how does it reduce model size?
 
-What is BPE (Byte Pair Encoding)?
+Answer:
+Pruning removes less important weights or neurons, shrinking model size and improving efficiency with minimal accuracy loss.
 
-What is tokenization in LLMs?
+Q186. How does a transformer encoder differ from a decoder?
 
-What is perplexity in language models?
+Answer:
+Encoder processes input sequences for representation; decoder generates outputs, often using encoder context and autoregressive steps.
 
-What is temperature in text generation?
+Q187. Explain key, query, and value in attention mechanisms.
 
-What is top-k and top-p (nucleus) sampling?
+Answer:
+Queries request information, keys identify content, values provide content; attention scores match queries to keys, weighting values.
 
-What are hallucinations in LLMs and how can you reduce them?
+Q188. What is multi-head attention and why use it?
 
-How do you evaluate LLM responses automatically?
+Answer:
+Multi-head attention computes multiple attention distributions in parallel, capturing diverse relationships and improving model expressiveness.
 
-What are vector embeddings and how are they computed?
+Q189. What is position encoding in Transformers?
 
-What’s the difference between OpenAI Embeddings and BERT embeddings?
+Answer:
+Position encoding injects sequence order information, enabling Transformers to distinguish token positions in input data.
 
-How does a Retrieval-Augmented Generation (RAG) pipeline work?
+Q190. What is BPE (Byte Pair Encoding)?
 
-How would you connect a vector database (like Pinecone or FAISS) to an LLM?
+Answer:
+BPE is a subword tokenization method that merges frequent character pairs, balancing vocabulary size and handling rare words.
+
+Q191. What is tokenization in LLMs?
+
+Answer:
+Tokenization splits text into units (tokens) for model processing, enabling efficient handling of language data.
+
+Q192. What is perplexity in language models?
+
+Answer:
+Perplexity measures how well a model predicts text; lower values indicate better predictive performance.
+
+Q193. What is temperature in text generation?
+
+Answer:
+Temperature controls randomness in sampling; higher values increase diversity, lower values make outputs more deterministic.
+
+Q194. What is top-k and top-p (nucleus) sampling?
+
+Answer:
+Top-k selects from the k most probable tokens; top-p chooses tokens whose cumulative probability exceeds p, balancing diversity and quality.
+
+Q195. What are hallucinations in LLMs and how can you reduce them?
+
+Answer:
+Hallucinations are inaccurate outputs; reduce them by improving training data, prompt design, and using retrieval-augmented generation.
+
+Q196. How do you evaluate LLM responses automatically?
+
+Answer:
+Use metrics like BLEU, ROUGE, perplexity, or task-specific criteria; leverage human feedback and automated scoring tools.
+
+Q197. What are vector embeddings and how are they computed?
+
+Answer:
+Vector embeddings are numerical representations of data, computed via neural networks to capture semantic meaning.
+
+Q198. What’s the difference between OpenAI Embeddings and BERT embeddings?
+
+Answer:
+OpenAI embeddings are optimized for retrieval and similarity; BERT embeddings capture contextual meaning from bidirectional attention.
+
+Q199. How does a Retrieval-Augmented Generation (RAG) pipeline work?
+
+Answer:
+RAG retrieves relevant documents and combines them with generative models, improving output accuracy and grounding responses.
+
+Q200. How would you connect a vector database (like Pinecone or FAISS) to an LLM?
+
+Answer:
+Integrate by embedding queries, searching the database for similar vectors, and feeding retrieved context to the LLM for generation.
 
 
 
 📊 201–220 | Evaluation, Metrics & Experimentation
 
-What is model calibration?
+Q201. What is model calibration?
 
-How do you evaluate regression models beyond MSE?
+Answer:
+Model calibration adjusts predicted probabilities to better reflect true outcomes, improving reliability in decision-making.
 
-What is a confusion matrix used for?
+Q202. How do you evaluate regression models beyond MSE?
 
-How do you compute AUC manually?
+Answer:
+Use metrics like MAE, RMSE, R², adjusted R², and residual analysis to assess regression performance.
 
-What is Cohen’s Kappa?
+Q203. What is a confusion matrix used for?
 
-How do you evaluate unsupervised models?
+Answer:
+A confusion matrix summarizes classification results, showing true positives, false positives, true negatives, and false negatives.
 
-What is a silhouette coefficient?
+Q204. How do you compute AUC manually?
 
-How do you evaluate a recommender system?
+Answer:
+Sort predictions, calculate TPR and FPR at each threshold, plot ROC curve, and compute area under the curve.
 
-What is MAP@K and NDCG@K?
+Q205. What is Cohen’s Kappa?
 
-What is precision@k?
+Answer:
+Cohen’s Kappa measures agreement between two raters, correcting for chance agreement.
 
-How do you design an offline evaluation for ranking models?
+Q206. How do you evaluate unsupervised models?
 
-What’s the difference between validation and test data?
+Answer:
+Use metrics like silhouette score, Davies-Bouldin index, cluster purity, and visual inspection.
 
-What is data leakage and how do you prevent it?
+Q207. What is a silhouette coefficient?
 
-What’s an ablation study in ML?
+Answer:
+Silhouette coefficient quantifies how similar an object is to its own cluster versus others; higher values indicate better clustering.
 
-What’s the purpose of random seeds in experiments?
+Q208. How do you evaluate a recommender system?
 
-What are the benefits of stratified sampling?
+Answer:
+Use metrics like precision@k, recall@k, MAP, NDCG, and user engagement statistics.
 
-How do you compare two models statistically?
+Q209. What is MAP@K and NDCG@K?
 
-What’s a baseline model and why is it useful?
+Answer:
+MAP@K measures average precision at top K recommendations; NDCG@K evaluates ranking quality, rewarding relevant items at higher ranks.
 
-What is bootstrapping in evaluation?
+Q210. What is precision@k?
 
-What is confidence interval in ML metrics?
+Answer:
+Precision@k is the proportion of relevant items among the top k recommendations.
+
+Q211. How do you design an offline evaluation for ranking models?
+
+Answer:
+Split data, use ranking metrics (e.g., NDCG, MAP), simulate user queries, and compare model outputs to ground truth.
+
+Q212. What’s the difference between validation and test data?
+
+Answer:
+Validation data tunes model parameters; test data evaluates final model performance, ensuring unbiased assessment.
+
+Q213. What is data leakage and how do you prevent it?
+
+Answer:
+Data leakage occurs when information from outside the training set is used; prevent by strict data separation and careful feature engineering.
+
+Q214. What’s an ablation study in ML?
+
+Answer:
+Ablation study removes or alters components to assess their impact on model performance.
+
+Q215. What’s the purpose of random seeds in experiments?
+
+Answer:
+Random seeds ensure reproducibility by fixing randomness in data splits and model initialization.
+
+Q216. What are the benefits of stratified sampling?
+
+Answer:
+Stratified sampling preserves class proportions, improving representativeness and reducing bias in splits.
+
+Q217. How do you compare two models statistically?
+
+Answer:
+Use paired tests (e.g., t-test, McNemar’s test), bootstrap resampling, or confidence intervals to assess significance.
+
+Q218. What’s a baseline model and why is it useful?
+
+Answer:
+A baseline model provides a simple reference for performance, helping gauge improvements from advanced models.
+
+Q219. What is bootstrapping in evaluation?
+
+Answer:
+Bootstrapping resamples data to estimate metric distributions and confidence intervals, enabling robust evaluation.
+
+Q220. What is confidence interval in ML metrics?
+
+Answer:
+Confidence interval quantifies uncertainty in metric estimates, providing a range likely to contain the true value.
 
 
 
 🧩 221–240 | Real-World ML System Design & Scenarios
 
-Design an ML system to recommend YouTube videos.
+Q221. Design an ML system to recommend YouTube videos.
 
-How would you detect fraud transactions in real time?
+Answer:
+Use collaborative filtering, content-based features, user history, and real-time feedback; deploy scalable pipelines and ranking models.
 
-How would you build a personalized chatbot for a company?
+Q222. How would you detect fraud transactions in real time?
 
-Design a system to detect fake news using LLMs.
+Answer:
+Leverage streaming data, anomaly detection, ensemble models, and rule-based systems; monitor and retrain with new patterns.
 
-Build a model that predicts user churn for a SaaS product.
+Q223. How would you build a personalized chatbot for a company?
 
-How would you architect an end-to-end image classification pipeline?
+Answer:
+Fine-tune LLMs on company data, integrate APIs, use retrieval-augmented generation, and monitor user feedback for improvement.
 
-How do you design a vector search engine?
+Q224. Design a system to detect fake news using LLMs.
 
-How do you scale inference for millions of users?
+Answer:
+Combine LLMs with fact-checking, retrieval, and classification; use external knowledge bases and human-in-the-loop validation.
 
-How do you design a continuous training pipeline?
+Q225. Build a model that predicts user churn for a SaaS product.
 
-What caching strategies can you use for ML inference?
+Answer:
+Engineer features from usage logs, train classification models, monitor churn signals, and deploy for proactive retention.
 
-What is model distillation and when should you use it?
+Q226. How would you architect an end-to-end image classification pipeline?
 
-How do you integrate ML models with APIs and frontends?
+Answer:
+Include data ingestion, preprocessing, augmentation, model training, evaluation, deployment, and monitoring.
 
-What are common data privacy issues in ML systems?
+Q227. How do you design a vector search engine?
 
-How do you ensure explainability in your models?
+Answer:
+Embed data into vectors, index with libraries (e.g., FAISS), use similarity search, and optimize for scalability and latency.
 
-What is SHAP and LIME for explainability?
+Q228. How do you scale inference for millions of users?
 
-How would you test ML models before deployment?
+Answer:
+Use distributed serving, autoscaling, caching, load balancing, and efficient model architectures.
 
-How do you log and debug model predictions?
+Q229. How do you design a continuous training pipeline?
 
-What is a feedback loop in ML systems?
+Answer:
+Automate data collection, retraining, validation, and deployment; monitor drift and trigger updates as needed.
 
-How do you handle adversarial attacks on models?
+Q230. What caching strategies can you use for ML inference?
 
-How would you build a GenAI-powered summarization tool end-to-end?
+Answer:
+Cache frequent predictions, use distributed caches, invalidate on model updates, and optimize for latency.
+
+Q231. What is model distillation and when should you use it?
+
+Answer:
+Distillation transfers knowledge from a large model to a smaller one, used for efficiency and deployment constraints.
+
+Q232. How do you integrate ML models with APIs and frontends?
+
+Answer:
+Expose models via REST/gRPC APIs, connect to frontends, handle authentication, and monitor usage.
+
+Q233. What are common data privacy issues in ML systems?
+
+Answer:
+Risks include data leakage, re-identification, unauthorized access; mitigate with encryption, anonymization, and access controls.
+
+Q234. How do you ensure explainability in your models?
+
+Answer:
+Use interpretable models, feature importance, visualization, and tools like SHAP or LIME.
+
+Q235. What is SHAP and LIME for explainability?
+
+Answer:
+SHAP and LIME provide local explanations by quantifying feature contributions for individual predictions.
+
+Q236. How would you test ML models before deployment?
+
+Answer:
+Perform unit, integration, and performance tests; validate with holdout data and simulate production scenarios.
+
+Q237. How do you log and debug model predictions?
+
+Answer:
+Log inputs, outputs, errors, and metadata; use monitoring tools and analyze logs for debugging.
+
+Q238. What is a feedback loop in ML systems?
+
+Answer:
+A feedback loop collects user responses, updates data, and retrains models to improve performance.
+
+Q239. How do you handle adversarial attacks on models?
+
+Answer:
+Use robust training, adversarial examples, input validation, and monitor for unusual patterns.
+
+Q240. How would you build a GenAI-powered summarization tool end-to-end?
+
+Answer:
+Collect data, fine-tune LLMs, implement retrieval, build APIs, deploy, and monitor quality and user feedback.
