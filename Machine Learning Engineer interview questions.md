@@ -3,23 +3,54 @@ Machine Learning Engineer Interview Q&A (2025 Edition)
 
 Q1. What is Machine Learning?
 
+Answer:
+Machine Learning is a field of AI that enables computers to learn patterns from data and make predictions or decisions without explicit programming.
+
 Q2. Difference between supervised, unsupervised, and reinforcement learning?
+
+Answer:
+Supervised learning uses labeled data to train models; unsupervised learning finds patterns in unlabeled data; reinforcement learning learns by interacting with an environment and receiving rewards.
 
 Q3. What is overfitting? How do you prevent it?
 
+Answer:
+Overfitting is when a model learns noise instead of patterns, performing poorly on new data. Prevent it with regularization, cross-validation, early stopping, or simpler models.
+
 Q4. What is underfitting?
+
+Answer:
+Underfitting occurs when a model is too simple to capture data patterns, resulting in poor performance on both training and test data.
 
 Q5. What is the bias–variance tradeoff?
 
+Answer:
+The bias–variance tradeoff balances model complexity: high bias leads to underfitting, high variance to overfitting. Optimal models minimize both for best generalization.
+
 Q6. What is cross-validation, and why is it important?
+
+Answer:
+Cross-validation splits data into subsets to train and test models multiple times, providing reliable performance estimates and reducing overfitting risk.
 
 Q7. What are hyperparameters vs parameters?
 
+Answer:
+Parameters are learned by the model during training; hyperparameters are set before training and control the learning process (e.g., learning rate, batch size).
+
 Q8. Explain precision, recall, and F1-score.
+
+Answer:
+Precision is the proportion of true positives among predicted positives; recall is the proportion of true positives among actual positives; F1-score is the harmonic mean of precision and recall.
 
 Q9. What is regularization? Explain L1 and L2.
 
+Answer:
+Regularization adds penalties to the loss function to prevent overfitting. L1 (lasso) encourages sparsity; L2 (ridge) penalizes large weights.
+
 Q10. What’s the purpose of the learning rate in optimization?
+
+Answer:
+The learning rate controls how much model parameters are updated during training. Too high can cause divergence; too low slows convergence.
+
 
 
 📊 2. Data Preprocessing & Feature Engineering
